@@ -35,28 +35,10 @@ pub fn get_latest_semver(
 }
 
 pub fn handle_version(repo: &Repository, args: &Cli) {
-    let latest: Option<Version>;
-    match get_latest_semver(repo, &args.prefix) {
-        Ok(opt) => {
-            match opt {
-                Some(version) => {
-                    latest = Some(version);
-                },
-                None => {
-                    println!("No SemVer tags found.");
-                    latest = None;
-                    // You might want to handle this differently, not just a println
-                    // For example, setting a default or returning.
-                },
-            }
-        },
-        Err(e) => {
-            eprintln!("Error getting latest SemVer tag: {}", e);
-            latest = None;
-            // Similarly, you might want more specific error handling here.
-        },
-    }
+    let latest = match get_latest_semver(repo, &args.prefix) {
+        Ok(Some(v)) => v,
+        _ => Version::new(0, 0, 0),
+    };
 
-    // Now you can access 'latest_version' here
     dbg!(latest);
 }
