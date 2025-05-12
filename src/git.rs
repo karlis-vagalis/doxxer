@@ -86,11 +86,15 @@ pub fn next_version(repo: &Repository, tag_prefix: Option<&str>) -> Version {
         Err(_) => String::from(""),
     };
 
+    let mut next = latest;
+    next.pre = Prerelease::new(&format!("post.{}", commit_count)).unwrap();
+    next.build = BuildMetadata::new(&format!("{}", short_hash)).unwrap();
+
     dbg!(&latest_tag_name);
     dbg!(&commit_count);
     dbg!(&short_hash);
 
-    latest
+    next
 }
 
 pub fn current_version(repo: &Repository, tag_prefix: Option<&str>) -> Version {
