@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use semver::Version;
 use std::path::PathBuf;
 
-use git::get_semver;
+use git::{current_version, next_version};
 
 use git2::Repository;
 
@@ -23,7 +23,8 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Version,
+    Current,
+    Next,
     #[clap(name = "self")]
     Doxxer {
         #[command(subcommand)]
@@ -50,12 +51,19 @@ fn main() {
 
     match &args.cmd {
         None => {
-            let version = get_semver(&repo, args.prefix.as_deref());
+            let version = current_version(&repo, args.prefix.as_deref());
             println!("{}", version);
         }
         Some(command) => {
             match command {
-                Commands::Version => {},
+                Commands::Current => {
+                    let version = current_version(&repo, args.prefix.as_deref());
+                    println!("{}", version);
+                },
+                Commands::Next => {
+                    let version = next_version(&repo, args.prefix.as_deref());
+                    println!("{}", version);
+                },
                 Commands::Doxxer { cmd } => {}
             }
         }
