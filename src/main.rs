@@ -1,8 +1,9 @@
+mod git;
+
 use clap::{Parser, Subcommand};
 use std::{path::PathBuf};
 
-mod git;
-use git::get_latest_tag;
+use git::get_latest_semver;
 
 use git2::Repository;
 
@@ -11,6 +12,9 @@ use git2::Repository;
 struct Cli {
     #[clap(short, long, default_value = ".")]
     directory: PathBuf,
+
+    #[clap(short, long, default_value = "v")]
+    prefix: Option<String>,
 
     #[command(subcommand)]
     cmd: Option<Commands>,
@@ -44,7 +48,17 @@ fn main() {
 
     match &args.cmd {
         None => {
-            get_latest_tag(repo);
+            match get_latest_semver(&repo, &args.prefix) {
+                Ok(opt) => {
+                    match opt {
+                        Some(version) => {
+                            dbg!(version);
+                        },
+                        None => todo!(),
+                    }
+                },
+                Err(_) => todo!(),
+            }
         }
         Some(command) => {},
     }
