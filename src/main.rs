@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use semver::Version;
 use std::path::PathBuf;
 
-use git::handle_version;
+use git::get_semver;
 
 use git2::Repository;
 
@@ -50,7 +50,8 @@ fn main() {
 
     match &args.cmd {
         None => {
-            handle_version(&repo, &args);
+            let version = get_semver(&repo, &args);
+            println!("{}", version);
         }
         Some(command) => {
             match command {

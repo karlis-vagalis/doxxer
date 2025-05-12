@@ -3,7 +3,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 
 use crate::Cli;
 
-pub fn get_latest_semver(
+pub fn find_latest_semver(
     repo: &Repository,
     prefix: &Option<String>,
 ) -> Result<Option<Version>, Error> {
@@ -34,11 +34,9 @@ pub fn get_latest_semver(
     Ok(versions.into_iter().next())
 }
 
-pub fn handle_version(repo: &Repository, args: &Cli) {
-    let latest = match get_latest_semver(repo, &args.prefix) {
+pub fn get_semver(repo: &Repository, args: &Cli) -> Version {
+    match find_latest_semver(repo, &args.prefix) {
         Ok(Some(v)) => v,
         _ => Version::new(0, 0, 0),
-    };
-
-    dbg!(latest);
+    }
 }
