@@ -3,9 +3,9 @@ use semver::{BuildMetadata, Prerelease, Version};
 
 use crate::Cli;
 
-pub fn find_latest_semver(
+fn find_latest_semver(
     repo: &Repository,
-    prefix: &Option<String>,
+    prefix: Option<&str>,
 ) -> Result<Option<Version>, Error> {
     let mut versions: Vec<Version> = Vec::new();
     repo.tag_foreach(|id, name_bytes| {
@@ -34,8 +34,29 @@ pub fn find_latest_semver(
     Ok(versions.into_iter().next())
 }
 
-pub fn get_semver(repo: &Repository, args: &Cli) -> Version {
-    match find_latest_semver(repo, &args.prefix) {
+fn get_commit_count_since_tag(repo: &Repository, tag_name: Option<&str>) -> Result<usize, Error> {
+    let revspec = if let Some(tag) = tag_name {
+        format!("{}..HEAD", tag)
+    } else {
+        "HEAD".to_string()
+    };
+    let mut revwalk = repo.revwalk()?;
+    revwalk.push_head()?;
+    if let Some(tag) = tag_name {
+        if let Ok(obj) = repo.revparse_single(tag) {
+            revwalk.hide(obj.id())?;
+        }
+    }
+
+    Ok(revwalk.count())
+}
+
+pub fn bump(repo: &Repository, tag: Option<&str>) {
+    
+}
+
+pub fn get_semver(repo: &Repository, prefix: Option<&str>) -> Version {
+    match find_latest_semver(repo, prefix) {
         Ok(Some(v)) => v,
         _ => Version::new(0, 0, 0),
     }

@@ -50,7 +50,7 @@ fn main() {
 
     match &args.cmd {
         None => {
-            let version = get_semver(&repo, &args);
+            let version = get_semver(&repo, args.prefix.as_deref());
             println!("{}", version);
         }
         Some(command) => {
