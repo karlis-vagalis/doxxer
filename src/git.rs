@@ -87,13 +87,12 @@ pub fn next_version(repo: &Repository, tag_prefix: Option<&str>) -> Version {
     };
 
     let mut next = latest;
-    next.pre = Prerelease::new(&format!("post.{}", commit_count)).unwrap();
+    let mut pre = String::new();
+    if !next.pre.is_empty() {
+        pre = format!("{}.", next.pre.as_str())
+    }
+    next.pre = Prerelease::new(&format!("{pre}dev.{commit_count}")).unwrap();
     next.build = BuildMetadata::new(&format!("{}", short_hash)).unwrap();
-
-    dbg!(&latest_tag_name);
-    dbg!(&commit_count);
-    dbg!(&short_hash);
-
     next
 }
 
