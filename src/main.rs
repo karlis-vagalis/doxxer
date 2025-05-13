@@ -32,7 +32,7 @@ enum Commands {
     /// Upcoming SemVer version string
     Next {
         /// Template for next version's pre-release
-        #[clap(short, long, default_value = "dev.{distance}")]
+        #[clap(short, long, default_value = "{old_pre}.dev.{distance}")]
         pre_template: String,
 
         /// Template for next version's build metadata

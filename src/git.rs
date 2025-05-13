@@ -70,14 +70,23 @@ fn find_latest_semver(repo: &Repository, prefix: &str) -> Result<Option<Version>
     Ok(versions.into_iter().next())
 }
 
-fn inject_variables(template: &str, commit_count: usize, short_hash: &String) -> String {
+fn inject_variables(template: &str, old_pre: &str, commit_count: usize, short_hash: &String) -> String {
     let mut template = String::from(template);
     for variable in TemplateVariables::iterator() {
         match variable {
             TemplateVariables::Hash => template = template.replace(variable.as_str(), short_hash.as_str()),
             TemplateVariables::Distance => template = template.replace(variable.as_str(), commit_count.to_string().as_str()),
+            TemplateVariables::OldPre => template = template.replace(variable.as_str(), old_pre),
         }
     }
+    template = match template.strip_prefix(".") {
+        Some(s) => s.to_string(),
+        None => template
+    };
+    template = match template.strip_suffix(".") {
+        Some(s) => s.to_string(),
+        None => template
+    };
     template
 }
 
@@ -105,15 +114,8 @@ pub fn next_version(
 
     let mut next = latest;
 
-    let mut pre: String;
-    if next.pre.is_empty() {
-        pre = pre_template.to_string();
-    } else {
-        pre = format!("{}.{}", next.pre.as_str(), pre_template);
-    }
-    pre = inject_variables(pre.as_str(), commit_count, &short_hash);
-
-    let build = inject_variables(build_template, commit_count, &short_hash);
+    let pre = inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash);
+    let build = inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash);
 
     next.pre = Prerelease::new(pre.as_str()).unwrap();
     next.build = BuildMetadata::new(build.as_str()).unwrap();
@@ -129,6 +131,7 @@ pub fn current_version(repo: &Repository, tag_prefix: &str) -> Version {
 
 #[derive(Debug)]
 enum TemplateVariables {
+    OldPre,
     Hash,
     Distance,
 }
@@ -137,10 +140,11 @@ impl TemplateVariables {
         match self {
             TemplateVariables::Hash => "{hash}",
             TemplateVariables::Distance => "{distance}",
+            TemplateVariables::OldPre => "{old_pre}",
         }
     }
     pub fn iterator() -> Iter<'static, TemplateVariables> {
-        static TEMPLATE_VARIABLES: [TemplateVariables; 2] = [TemplateVariables::Hash, TemplateVariables::Distance];
+        static TEMPLATE_VARIABLES: [TemplateVariables; 3] = [TemplateVariables::Hash, TemplateVariables::Distance, TemplateVariables::OldPre];
         TEMPLATE_VARIABLES.iter()
     }
 }
