@@ -15,6 +15,7 @@ struct Cli {
     #[clap(short, long, default_value = ".")]
     directory: PathBuf,
 
+    /// Prefix of the tag names used for releases
     #[clap(short, long, default_value = "v")]
     tag_prefix: String,
 
@@ -93,7 +94,7 @@ fn main() {
 
     let repo = match Repository::open(&args.directory) {
         Ok(repo) => repo,
-        Err(e) => panic!("failed to open: {}", e),
+        Err(e) => panic!("Issue opening repository! {}", e),
     };
 
     match &args.cmd {
