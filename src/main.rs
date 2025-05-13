@@ -116,6 +116,4 @@ fn main() {
         }
         Commands::Doxxer { cmd } => {}
     }
-
-    dbg!(args);
 }
