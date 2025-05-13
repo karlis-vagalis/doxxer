@@ -1,7 +1,9 @@
 [package]
 name = "doxxer"
-version = "0.1.0"
+authors = ["Karlis Vagalis <karlis.vagalis@gmail.com>"]
+version = "0.0.0"
 edition = "2021"
+license = "LGPL-3.0-or-later"
 
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"] }
