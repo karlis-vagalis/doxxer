@@ -14,3 +14,7 @@ categories = ["command-line-utilities", "development-tools"]
 clap = { version = "4.5.38", features = ["derive"] }
 git2 = "0.20.2"
 semver = "1.0.26"
+
+[profile.release]
+opt-level = "z"
+lto = true
