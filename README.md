@@ -99,6 +99,13 @@ doxxer current major
 
 ### Getting upcoming version
 
+#### Minor version only with minor bump strategy
+
+```
+doxxer next -s minor minor
+```
+*Output*: `1`
+
 #### Patch version
 
 ```
@@ -126,3 +133,16 @@ doxxer next -p "release-"
 doxxer -p "" next
 ```
 *Output*: `0.0.0-dev.19+1b9f41e`
+
+# FAQ
+
+1. Why is the default strategy `pre-build` and not `patch`?
+
+Because the original idea and goal of this tool is to dynamically generate version
+for a project, when iterating/developing. So, the defaults reflect this goal and
+thus, require least amount of configuration.
+
+# Roadmap
+
+- [ ] Add installation shell script, similar to `uv` or `just` to install prebuild binaries from GitHub
+- [ ] Add `{timestamp}` variable support to the template
