@@ -60,8 +60,10 @@ Commands:
   help   Print this message or the help of the given subcommand(s)
 
 Options:
+  -s, --strategy <STRATEGY>
+          Bumping strategy [default: pre-build] [possible values: major, minor, patch, pre-build]
   -p, --pre-template <PRE_TEMPLATE>
-          Template for next version's pre-release [default: {old_pre}.dev.{distance}]
+          Template for next version's pre-release [default: {pre}.dev.{distance}]
   -b, --build-template <BUILD_TEMPLATE>
           Template for next version's build metadata [default: {hash}]
   -h, --help
@@ -72,7 +74,7 @@ Options:
 
 | Variable | Description |
 |--|--|
-| `{old_pre}` | Old (current) pre-release |
+| `{pre}` | Current pre-release |
 | `{hash}` | First 7-digits of the commit hash |
 | `{distance}` | Count of commits since last tag |
 
@@ -96,6 +98,13 @@ doxxer current major
 *Output*: `0`
 
 ### Getting upcoming version
+
+#### Patch version
+
+```
+doxxer next -s patch
+```
+*Output*: `v0.0.1`
 
 #### With tag prefix
 

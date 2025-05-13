@@ -87,7 +87,7 @@ fn inject_variables(
             TemplateVariables::Distance => {
                 template = template.replace(variable.as_str(), commit_count.to_string().as_str())
             }
-            TemplateVariables::OldPre => template = template.replace(variable.as_str(), old_pre),
+            TemplateVariables::Pre => template = template.replace(variable.as_str(), old_pre),
         }
     }
     template = match template.strip_prefix(".") {
@@ -167,7 +167,7 @@ pub fn current_version(repo: &Repository, tag_prefix: &str) -> Version {
 
 #[derive(Debug)]
 enum TemplateVariables {
-    OldPre,
+    Pre,
     Hash,
     Distance,
 }
@@ -176,14 +176,14 @@ impl TemplateVariables {
         match self {
             TemplateVariables::Hash => "{hash}",
             TemplateVariables::Distance => "{distance}",
-            TemplateVariables::OldPre => "{old_pre}",
+            TemplateVariables::Pre => "{pre}",
         }
     }
     pub fn iterator() -> Iter<'static, TemplateVariables> {
         static TEMPLATE_VARIABLES: [TemplateVariables; 3] = [
             TemplateVariables::Hash,
             TemplateVariables::Distance,
-            TemplateVariables::OldPre,
+            TemplateVariables::Pre,
         ];
         TEMPLATE_VARIABLES.iter()
     }
