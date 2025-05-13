@@ -4,6 +4,11 @@ authors = ["Karlis Vagalis <karlis.vagalis@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
 license = "LGPL-3.0-or-later"
+description = "CLI tool for dynamic SemVer versioning using Git and tags"
+readme = "README.md"
+repository = "https://github.com/karlis-vagalis/doxxer"
+keywords = ["semver", "git", "versioning", "cli"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"] }
