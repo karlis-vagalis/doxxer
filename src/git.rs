@@ -1,6 +1,6 @@
 use git2::{Error, ObjectType, Repository};
 use semver::{BuildMetadata, Prerelease, Version};
-use std::{slice::Iter};
+use std::slice::Iter;
 
 fn find_tag_name_matching_version(
     repo: &Repository,
@@ -21,7 +21,7 @@ fn find_tag_name_matching_version(
 }
 
 fn get_commit_count_since_tag(repo: &Repository, tag_name: Option<&str>) -> Result<usize, Error> {
-    let revspec = if let Some(tag) = tag_name {
+    if let Some(tag) = tag_name {
         format!("{}..HEAD", tag)
     } else {
         "HEAD".to_string()
@@ -46,7 +46,7 @@ fn get_short_head_hash(repo: &Repository) -> Result<String, Error> {
 
 fn find_latest_semver(repo: &Repository, prefix: &str) -> Result<Option<Version>, Error> {
     let mut versions: Vec<Version> = Vec::new();
-    repo.tag_foreach(|id, name_bytes| {
+    let _ = repo.tag_foreach(|_id, name_bytes| {
         if let Ok(name) = String::from_utf8(name_bytes.to_vec()) {
             if let Some(tag_name) = name.strip_prefix("refs/tags/") {
                 let tag_name = {
@@ -70,22 +70,31 @@ fn find_latest_semver(repo: &Repository, prefix: &str) -> Result<Option<Version>
     Ok(versions.into_iter().next())
 }
 
-fn inject_variables(template: &str, old_pre: &str, commit_count: usize, short_hash: &String) -> String {
+fn inject_variables(
+    template: &str,
+    old_pre: &str,
+    commit_count: usize,
+    short_hash: &String,
+) -> String {
     let mut template = String::from(template);
     for variable in TemplateVariables::iterator() {
         match variable {
-            TemplateVariables::Hash => template = template.replace(variable.as_str(), short_hash.as_str()),
-            TemplateVariables::Distance => template = template.replace(variable.as_str(), commit_count.to_string().as_str()),
+            TemplateVariables::Hash => {
+                template = template.replace(variable.as_str(), short_hash.as_str())
+            }
+            TemplateVariables::Distance => {
+                template = template.replace(variable.as_str(), commit_count.to_string().as_str())
+            }
             TemplateVariables::OldPre => template = template.replace(variable.as_str(), old_pre),
         }
     }
     template = match template.strip_prefix(".") {
         Some(s) => s.to_string(),
-        None => template
+        None => template,
     };
     template = match template.strip_suffix(".") {
         Some(s) => s.to_string(),
-        None => template
+        None => template,
     };
     template
 }
@@ -144,7 +153,11 @@ impl TemplateVariables {
         }
     }
     pub fn iterator() -> Iter<'static, TemplateVariables> {
-        static TEMPLATE_VARIABLES: [TemplateVariables; 3] = [TemplateVariables::Hash, TemplateVariables::Distance, TemplateVariables::OldPre];
+        static TEMPLATE_VARIABLES: [TemplateVariables; 3] = [
+            TemplateVariables::Hash,
+            TemplateVariables::Distance,
+            TemplateVariables::OldPre,
+        ];
         TEMPLATE_VARIABLES.iter()
     }
 }

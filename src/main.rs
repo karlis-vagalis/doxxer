@@ -1,17 +1,18 @@
 mod git;
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use semver::Version;
 use std::path::PathBuf;
 
 use git::{current_version, next_version};
 
-use git2::{build, Repository};
+use git2::Repository;
 
 /// Dynamic version manager for Git
 #[derive(Parser, Debug)]
-#[clap(version)]
+#[clap(version, color = clap::ColorChoice::Auto)]
 struct Cli {
+    /// Path to the Git repository
     #[clap(short, long, default_value = ".")]
     directory: PathBuf,
 
@@ -19,18 +20,21 @@ struct Cli {
     #[clap(short, long, default_value = "v")]
     tag_prefix: String,
 
+    #[clap(flatten, next_help_heading = "Output options")]
+    version_output_options: OutputOptions,
+
     #[command(subcommand)]
     cmd: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Current SemVer version string from latest tag
+    /// Returns current version string from latest tag
     Current {
         #[command(subcommand)]
         cmd: Option<PartCommands>,
     },
-    /// Upcoming SemVer version string
+    /// Returns next version string
     Next {
         /// Template for next version's pre-release
         #[clap(short, long, default_value = "{old_pre}.dev.{distance}")]
@@ -42,12 +46,6 @@ enum Commands {
 
         #[command(subcommand)]
         cmd: Option<PartCommands>,
-    },
-    /// Manage the doxxer executable
-    #[clap(name = "self")]
-    Doxxer {
-        #[command(subcommand)]
-        cmd: DoxxerCommands,
     },
 }
 
@@ -65,19 +63,19 @@ enum PartCommands {
     Build,
 }
 
-#[derive(Subcommand, Debug)]
-enum DoxxerCommands {
-    Info {
-        #[clap(short, long)]
-        verbose: bool,
-    },
-    Version,
+/// Output options
+#[derive(Debug, Args)]
+#[group(required = false, multiple = false)]
+struct OutputOptions {
+    /// Add tag prefix to the output version
+    #[clap(long, short, default_value = "v")]
+    prefix: String,
 }
 
-fn output_version(cmd: &Option<PartCommands>, version: &Version) {
+fn output_version(cmd: &Option<PartCommands>, version: &Version, output_prefix: &str) {
     match cmd {
         None => {
-            println!("{}", version);
+            println!("{}{}", output_prefix, version);
         }
         Some(part) => match part {
             PartCommands::Major => println!("{}", version.major),
@@ -100,7 +98,7 @@ fn main() {
     match &args.cmd {
         Commands::Current { cmd } => {
             let version = current_version(&repo, args.tag_prefix.as_str());
-            output_version(cmd, &version)
+            output_version(cmd, &version, &args.version_output_options.prefix)
         }
         Commands::Next {
             cmd,
@@ -113,8 +111,7 @@ fn main() {
                 pre_template.as_str(),
                 build_template.as_str(),
             );
-            output_version(cmd, &version)
+            output_version(cmd, &version, &args.version_output_options.prefix)
         }
-        Commands::Doxxer { cmd } => {}
     }
 }
