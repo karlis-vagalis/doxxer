@@ -2,6 +2,8 @@ use git2::{Error, ObjectType, Repository};
 use semver::{BuildMetadata, Prerelease, Version};
 use std::slice::Iter;
 
+use crate::Strategy;
+
 fn find_tag_name_matching_version(
     repo: &Repository,
     version_string: &str,
@@ -102,6 +104,7 @@ fn inject_variables(
 pub fn next_version(
     repo: &Repository,
     tag_prefix: &str,
+    strategy: &Strategy,
     pre_template: &str,
     build_template: &str,
 ) -> Version {
@@ -123,8 +126,32 @@ pub fn next_version(
 
     let mut next = latest;
 
-    let pre = inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash);
-    let build = inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash);
+    let mut pre = inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash);
+    let mut build = inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash);
+
+    match strategy {
+        Strategy::Major => {
+            next.major += 1;
+            next.minor = 0;
+            next.patch = 0;
+        }
+        Strategy::Minor => {
+            next.minor += 1;
+            next.patch = 0;
+        }
+        Strategy::Patch => {
+            next.patch += 1;
+        }
+        Strategy::PreBuild => {}
+    }
+
+    match strategy {
+        Strategy::PreBuild => {}
+        _ => {
+            pre = String::new();
+            build = String::new();
+        }
+    }
 
     next.pre = Prerelease::new(pre.as_str()).unwrap();
     next.build = BuildMetadata::new(build.as_str()).unwrap();

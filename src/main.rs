@@ -1,8 +1,8 @@
 mod git;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use semver::Version;
-use std::path::PathBuf;
+use std::{fmt, path::PathBuf};
 
 use git::{current_version, next_version};
 
@@ -36,6 +36,10 @@ enum Commands {
     },
     /// Returns next version string
     Next {
+        /// Bumping strategy
+        #[clap(short, long, value_parser = clap::value_parser!(Strategy), default_value_t)]
+        strategy: Strategy,
+
         /// Template for next version's pre-release
         #[clap(short, long, default_value = "{old_pre}.dev.{distance}")]
         pre_template: String,
@@ -61,6 +65,25 @@ enum PartCommands {
     Pre,
     /// Get build metadata
     Build,
+}
+
+#[derive(ValueEnum, Clone, Debug, Default)]
+enum Strategy {
+    Major,
+    Minor,
+    Patch,
+    #[default]
+    PreBuild,
+}
+impl fmt::Display for Strategy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Strategy::Major => write!(f, "major"),
+            Strategy::Minor => write!(f, "minor"),
+            Strategy::Patch => write!(f, "patch"),
+            Strategy::PreBuild => write!(f, "pre-build"),
+        }
+    }
 }
 
 /// Output options
@@ -102,12 +125,14 @@ fn main() {
         }
         Commands::Next {
             cmd,
+            strategy,
             pre_template,
             build_template,
         } => {
             let version = next_version(
                 &repo,
                 args.tag_prefix.as_str(),
+                strategy,
                 pre_template.as_str(),
                 build_template.as_str(),
             );
