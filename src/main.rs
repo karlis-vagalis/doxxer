@@ -16,7 +16,7 @@ struct Cli {
     directory: PathBuf,
 
     #[clap(short, long, default_value = "v")]
-    prefix: Option<String>,
+    tag_prefix: Option<String>,
 
     #[command(subcommand)]
     cmd: Commands,
@@ -24,13 +24,21 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Get current version from latest tag
+    /// Current SemVer version string from latest tag
     Current {
         #[command(subcommand)]
         cmd: Option<PartCommands>,
     },
-    /// Get upcoming version
+    /// Upcoming SemVer version string
     Next {
+        /// Template for next version's pre-release
+        #[clap(short, long, default_value = "dev.{distance}")]
+        pre_template: Option<String>,
+
+        /// Template for next version's build metadata
+        #[clap(short, long, default_value = "{hash}")]
+        build_template: Option<String>,
+
         #[command(subcommand)]
         cmd: Option<PartCommands>,
     },
@@ -92,11 +100,11 @@ fn main() {
 
     match &args.cmd {
         Commands::Current {cmd} => {
-            let version = current_version(&repo, args.prefix.as_deref());
+            let version = current_version(&repo, args.tag_prefix.as_deref());
             output_version(cmd, &version)
         }
-        Commands::Next {cmd} => {
-            let version = next_version(&repo, args.prefix.as_deref());
+        Commands::Next {cmd, pre_template, build_template } => {
+            let version = next_version(&repo, args.tag_prefix.as_deref());
             output_version(cmd, &version)
         }
         Commands::Doxxer { cmd } => {}
