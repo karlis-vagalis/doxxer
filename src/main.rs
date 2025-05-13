@@ -8,6 +8,7 @@ use git::{current_version, next_version};
 
 use git2::Repository;
 
+/// Dynamic version manager for Git
 #[derive(Parser, Debug)]
 #[clap(version)]
 struct Cli {
@@ -18,18 +19,41 @@ struct Cli {
     prefix: Option<String>,
 
     #[command(subcommand)]
-    cmd: Option<Commands>,
+    cmd: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Current,
-    Next,
+    /// Get current version from latest tag
+    Current {
+        #[command(subcommand)]
+        cmd: Option<PartCommands>,
+    },
+    /// Get upcoming version
+    Next {
+        #[command(subcommand)]
+        cmd: Option<PartCommands>,
+    },
+    /// Manage the doxxer executable
     #[clap(name = "self")]
     Doxxer {
         #[command(subcommand)]
         cmd: DoxxerCommands,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum PartCommands {
+    /// Get major version
+    Major,
+    /// Get minor version
+    Minor,
+    /// Get patch version
+    Patch,
+    /// Get pre-release version
+    Pre,
+    /// Get build metadata
+    Build
 }
 
 #[derive(Subcommand, Debug)]
@@ -41,6 +65,23 @@ enum DoxxerCommands {
     Version,
 }
 
+fn output_version(cmd: &Option<PartCommands>, version: &Version) {
+    match cmd {
+        None => {
+            println!("{}", version);
+        },
+        Some(part) => {
+            match part {
+                PartCommands::Major => println!("{}", version.major),
+                PartCommands::Minor => println!("{}", version.minor),
+                PartCommands::Patch => println!("{}", version.patch),
+                PartCommands::Pre => println!("{}", version.pre),
+                PartCommands::Build => println!("{}", version.build),
+            }
+        },
+    }
+}
+
 fn main() {
     let args = Cli::parse();
 
@@ -50,23 +91,15 @@ fn main() {
     };
 
     match &args.cmd {
-        None => {
+        Commands::Current {cmd} => {
             let version = current_version(&repo, args.prefix.as_deref());
-            println!("{}", version);
+            output_version(cmd, &version)
         }
-        Some(command) => {
-            match command {
-                Commands::Current => {
-                    let version = current_version(&repo, args.prefix.as_deref());
-                    println!("{}", version);
-                },
-                Commands::Next => {
-                    let version = next_version(&repo, args.prefix.as_deref());
-                    println!("{}", version);
-                },
-                Commands::Doxxer { cmd } => {}
-            }
+        Commands::Next {cmd} => {
+            let version = next_version(&repo, args.prefix.as_deref());
+            output_version(cmd, &version)
         }
+        Commands::Doxxer { cmd } => {}
     }
 
     dbg!(args);
