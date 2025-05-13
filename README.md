@@ -1,8 +1,10 @@
-`Doxxer` is a CLI tool written in Rust to automatically generate dynamic
+`doxxer` is a CLI tool written in Rust to automatically generate dynamic
 [SemVer](https://semver.org/) versions based on the latest Git tags and commits.
 
 This approach was heavily inspired by the output produced by the native
 `git decribe --tags`, with adjustments to comply with specification.
+
+![image info](./docs/main_cli.png)
 
 # Introduction
 

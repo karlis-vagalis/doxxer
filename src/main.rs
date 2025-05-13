@@ -1,5 +1,6 @@
 mod git;
 
+use clap::builder::styling::{Effects, RgbColor, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use semver::Version;
 use std::{fmt, path::PathBuf};
@@ -10,7 +11,7 @@ use git2::Repository;
 
 /// Dynamic version manager for Git
 #[derive(Parser, Debug)]
-#[clap(version, color = clap::ColorChoice::Auto)]
+#[clap(version, color = clap::ColorChoice::Auto, styles=get_styles())]
 struct Cli {
     /// Path to the Git repository
     #[clap(short, long, default_value = ".")]
@@ -108,6 +109,14 @@ fn output_version(cmd: &Option<PartCommands>, version: &Version, output_prefix: 
             PartCommands::Build => println!("{}", version.build),
         },
     }
+}
+
+fn get_styles() -> Styles {
+    Styles::styled()
+        .header(RgbColor::from((246, 193, 119)).on_default() | Effects::BOLD)
+        .usage(RgbColor::from((196, 167, 231)).on_default() | Effects::BOLD)
+        .literal(RgbColor::from((235, 188, 186)).on_default() | Effects::BOLD)
+        .placeholder(RgbColor::from((196, 167, 231)).on_default())
 }
 
 fn main() {
