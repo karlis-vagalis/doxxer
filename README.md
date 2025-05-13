@@ -8,6 +8,12 @@ This approach was heavily inspired by the output produced by the native
 
 ## Getting started
 
+To install from cargo:
+
+```bash
+cargo install doxxer
+```
+
 ## Usage
 
 ```bash
