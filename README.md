@@ -34,13 +34,60 @@ Output options:
   -p, --prefix <PREFIX>  Add tag prefix to the output version [default: v]
 ```
 
+## Next version
+
+```
+doxxer next --help
+```
+
+```
+Returns next version string
+
+Usage: doxxer next [OPTIONS] [COMMAND]
+
+Commands:
+  major  Get major version
+  minor  Get minor version
+  patch  Get patch version
+  pre    Get pre-release version
+  build  Get build metadata
+  help   Print this message or the help of the given subcommand(s)
+
+Options:
+  -p, --pre-template <PRE_TEMPLATE>
+          Template for next version's pre-release [default: {old_pre}.dev.{distance}]
+  -b, --build-template <BUILD_TEMPLATE>
+          Template for next version's build metadata [default: {hash}]
+  -h, --help
+          Print help
+```
+
+## Template variables
+
+| Variable | Description |
+|--|--|
+| `{old_pre}` | Old (current) pre-release |
+| `{hash}` | First 7-digits of the commit hash |
+| `{distance}` | Count of commits since last tag |
+
 ## Examples
+
+Lets assume, we do not have any Git tag with sematic version yet, thus, `0.0.0`
+is the fallback. We are `19` commits past the origin, with commit hash `1b9f41e`.
 
 ### Getting current version
 
 ```
 doxxer current
 ```
+*Output*: `v0.0.0`
+
+#### Major version only
+
+```
+doxxer current major
+```
+*Output*: `0`
 
 ### Getting upcoming version
 
@@ -49,9 +96,18 @@ doxxer current
 ```
 doxxer next
 ```
+*Output*: `v0.0.0-dev.19+1b9f41e`
+
+#### With custom tag prefex
+
+```
+doxxer next -p "release-"
+```
+*Output*: `release-0.0.0-dev.19+1b9f41e`
 
 #### Without tag prefix
 
 ```
 doxxer -p "" next
 ```
+*Output*: `0.0.0-dev.19+1b9f41e`
