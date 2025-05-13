@@ -142,6 +142,11 @@ Because the original idea and goal of this tool is to dynamically generate versi
 for a project, when iterating/developing. So, the defaults reflect this goal and
 thus, require least amount of configuration.
 
+2. Why is the project called `doxxer`?
+
+Because it's like somebody who [doxes](https://en.wikipedia.org/wiki/Doxing), by
+exposing the version information about Git repo to you!
+
 # Roadmap
 
 - [ ] Add installation shell script, similar to `uv` or `just` to install prebuild binaries from GitHub
