@@ -24,12 +24,12 @@ Sleep 500ms
 Enter
 Sleep 1.5s
 
-Type `doxxer next -p "post.{distance}" -b ""`
+Type `doxxer next --pre-template "post.{distance}" --build-template ""`
 Sleep 500ms
 Enter
 Sleep 1.5s
 
-Type "doxxer next -s patch"
+Type "doxxer next --strategy patch"
 Sleep 500ms
 Enter
 Sleep 1.5s
