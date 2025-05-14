@@ -10,7 +10,7 @@ Enter
 Sleep 1.5s
 
 Hide
-Type "clear && cd /home/kvagalis/Software/xtr"
+Type "clear && cd .."
 Enter
 Show
 
