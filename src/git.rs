@@ -104,9 +104,7 @@ fn inject_variables(
 pub fn next_version(
     repo: &Repository,
     tag_prefix: &str,
-    strategy: &Strategy,
-    pre_template: &str,
-    build_template: &str,
+    strategy: &Strategy
 ) -> Version {
     let latest = current_version(repo, tag_prefix);
 
@@ -126,8 +124,8 @@ pub fn next_version(
 
     let mut next = latest;
 
-    let mut pre = inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash);
-    let mut build = inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash);
+    let mut pre = Prerelease::EMPTY;
+    let mut build = BuildMetadata::EMPTY;
 
     match strategy {
         Strategy::Major { increment } => {
@@ -142,19 +140,14 @@ pub fn next_version(
         Strategy::Patch { increment } => {
             next.patch += increment;
         }
-        Strategy::PreBuild => {}
-    }
-
-    match strategy {
-        Strategy::PreBuild => {}
-        _ => {
-            pre = String::new();
-            build = String::new();
+        Strategy::PreBuild {pre_template, build_template} => {
+            pre = Prerelease::new(inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash).as_str()).unwrap();
+            build = BuildMetadata::new(inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash).as_str()).unwrap();
         }
     }
 
-    next.pre = Prerelease::new(pre.as_str()).unwrap();
-    next.build = BuildMetadata::new(build.as_str()).unwrap();
+    next.pre = pre;
+    next.build = build;
     next
 }
 

@@ -30,29 +30,20 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Returns current version string from latest tag
+    /// Returns current version
     Current {
         /// Field/part of the version
         #[clap(short, long)]
         field: Option<Field>,
     },
-    /// Returns next version string
+    /// Returns next version
     Next {
-        /// Bumping strategy
         #[clap(subcommand)]
         strategy: Option<Strategy>,
 
         /// Field/part of the version
         #[clap(short, long)]
         field: Option<Field>,
-
-        /// Template for next version's pre-release
-        #[clap(short, long, default_value = "{pre}.dev.{distance}")]
-        pre_template: String,
-
-        /// Template for next version's build metadata
-        #[clap(short, long, default_value = "{hash}")]
-        build_template: String,
     },
 }
 
@@ -65,7 +56,7 @@ enum Field {
     Build,
 }
 
-
+/// Bumping strategy
 #[derive(Subcommand, Debug)]
 #[clap(
     subcommand_help_heading = "Bumping strategy",
@@ -75,20 +66,28 @@ enum Strategy {
     /// Bump major version
     Major {
         #[clap(short, long, default_value_t = 1)]
-        increment: u64
+        increment: u64,
     },
     /// Bump minor version
     Minor {
         #[clap(short, long, default_value_t = 1)]
-        increment: u64
+        increment: u64,
     },
     /// Bump patch version
     Patch {
         #[clap(short, long, default_value_t = 1)]
-        increment: u64
+        increment: u64,
     },
     /// Bump pre-release version + build metadata [default]
-    PreBuild,
+    PreBuild {
+        /// Template for next version's pre-release
+        #[clap(short, long, default_value = "{pre}.dev.{distance}")]
+        pre_template: String,
+
+        /// Template for next version's build metadata
+        #[clap(short, long, default_value = "{hash}")]
+        build_template: String,
+    },
 }
 
 /// Output options
@@ -139,19 +138,18 @@ fn main() {
         Commands::Next {
             field,
             strategy,
-            pre_template,
-            build_template,
         } => {
             let strategy = match strategy {
                 Some(s) => s,
-                None => &Strategy::PreBuild,
+                None => &Strategy::PreBuild{
+                    pre_template: String::from("{pre}.dev.{distance}"),
+                    build_template: String::from("{hash}"),
+                },
             };
             let version = next_version(
                 &repo,
                 args.tag_prefix.as_str(),
-                strategy,
-                pre_template.as_str(),
-                build_template.as_str(),
+                strategy
             );
             output_version(field, &version, &args.version_output_options.prefix)
         }
