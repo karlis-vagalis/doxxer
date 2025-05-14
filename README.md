@@ -4,7 +4,7 @@
 This approach was heavily inspired by the output produced by the native
 `git decribe --tags`, with adjustments to comply with specification.
 
-![image info](./docs/main_cli.png)
+![image info](./docs/demo.gif)
 
 # Introduction
 
