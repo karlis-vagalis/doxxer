@@ -11,7 +11,7 @@ use git2::Repository;
 
 /// Dynamic version manager for Git
 #[derive(Parser, Debug)]
-#[clap(version, color = clap::ColorChoice::Auto, styles=get_styles())]
+#[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
 struct Cli {
     /// Path to the Git repository
     #[clap(short, long, default_value = ".")]
@@ -38,13 +38,13 @@ enum Commands {
     },
     /// Returns next version string
     Next {
-        /// Field/part of the version
-        #[clap(short, long)]
-        field: Option<Field>,
-
         /// Bumping strategy
         #[clap(subcommand)]
         strategy: Strategy,
+
+        /// Field/part of the version
+        #[clap(short, long)]
+        field: Option<Field>,
 
         /// Template for next version's pre-release
         #[clap(short, long, default_value = "{pre}.dev.{distance}")]
@@ -68,6 +68,10 @@ enum Field {
 type Increment = u64;
 
 #[derive(Subcommand, Debug, Default)]
+#[clap(
+    subcommand_help_heading = "Bumping strategy",
+    subcommand_value_name = "STRATEGY"
+)]
 enum Strategy {
     /// Bump major version
     Major,
