@@ -3,7 +3,7 @@ mod git;
 use clap::builder::styling::{Effects, RgbColor, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use semver::Version;
-use std::{fmt, path::PathBuf};
+use std::path::PathBuf;
 
 use git::{current_version, next_version};
 
@@ -32,13 +32,18 @@ struct Cli {
 enum Commands {
     /// Returns current version string from latest tag
     Current {
-        #[command(subcommand)]
-        cmd: Option<PartCommands>,
+        /// Field/part of the version
+        #[clap(short, long)]
+        field: Option<Field>,
     },
     /// Returns next version string
     Next {
+        /// Field/part of the version
+        #[clap(short, long)]
+        field: Option<Field>,
+
         /// Bumping strategy
-        #[clap(short, long, value_parser = clap::value_parser!(Strategy), default_value_t)]
+        #[clap(subcommand)]
         strategy: Strategy,
 
         /// Template for next version's pre-release
@@ -48,43 +53,31 @@ enum Commands {
         /// Template for next version's build metadata
         #[clap(short, long, default_value = "{hash}")]
         build_template: String,
-
-        #[command(subcommand)]
-        cmd: Option<PartCommands>,
     },
 }
 
-#[derive(Subcommand, Debug)]
-enum PartCommands {
-    /// Get major version
+#[derive(ValueEnum, Clone, Debug)]
+enum Field {
     Major,
-    /// Get minor version
     Minor,
-    /// Get patch version
     Patch,
-    /// Get pre-release version
     Pre,
-    /// Get build metadata
     Build,
 }
 
-#[derive(ValueEnum, Clone, Debug, Default)]
+type Increment = u64;
+
+#[derive(Subcommand, Debug, Default)]
 enum Strategy {
+    /// Bump major version
     Major,
+    /// Bump minor version
     Minor,
+    /// Bump patch version
     Patch,
+    /// Bump pre-release version + build metadata
     #[default]
     PreBuild,
-}
-impl fmt::Display for Strategy {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Strategy::Major => write!(f, "major"),
-            Strategy::Minor => write!(f, "minor"),
-            Strategy::Patch => write!(f, "patch"),
-            Strategy::PreBuild => write!(f, "pre-build"),
-        }
-    }
 }
 
 /// Output options
@@ -96,17 +89,17 @@ struct OutputOptions {
     prefix: String,
 }
 
-fn output_version(cmd: &Option<PartCommands>, version: &Version, output_prefix: &str) {
+fn output_version(cmd: &Option<Field>, version: &Version, output_prefix: &str) {
     match cmd {
         None => {
             println!("{}{}", output_prefix, version);
         }
         Some(part) => match part {
-            PartCommands::Major => println!("{}", version.major),
-            PartCommands::Minor => println!("{}", version.minor),
-            PartCommands::Patch => println!("{}", version.patch),
-            PartCommands::Pre => println!("{}", version.pre),
-            PartCommands::Build => println!("{}", version.build),
+            Field::Major => println!("{}", version.major),
+            Field::Minor => println!("{}", version.minor),
+            Field::Patch => println!("{}", version.patch),
+            Field::Pre => println!("{}", version.pre),
+            Field::Build => println!("{}", version.build),
         },
     }
 }
@@ -128,12 +121,12 @@ fn main() {
     };
 
     match &args.cmd {
-        Commands::Current { cmd } => {
+        Commands::Current { field } => {
             let version = current_version(&repo, args.tag_prefix.as_str());
-            output_version(cmd, &version, &args.version_output_options.prefix)
+            output_version(field, &version, &args.version_output_options.prefix)
         }
         Commands::Next {
-            cmd,
+            field,
             strategy,
             pre_template,
             build_template,
@@ -145,7 +138,7 @@ fn main() {
                 pre_template.as_str(),
                 build_template.as_str(),
             );
-            output_version(cmd, &version, &args.version_output_options.prefix)
+            output_version(field, &version, &args.version_output_options.prefix)
         }
     }
 }
