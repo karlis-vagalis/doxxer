@@ -40,7 +40,7 @@ enum Commands {
     Next {
         /// Bumping strategy
         #[clap(subcommand)]
-        strategy: Strategy,
+        strategy: Option<Strategy>,
 
         /// Field/part of the version
         #[clap(short, long)]
@@ -67,7 +67,7 @@ enum Field {
 
 type Increment = u64;
 
-#[derive(Subcommand, Debug, Default)]
+#[derive(Subcommand, Debug)]
 #[clap(
     subcommand_help_heading = "Bumping strategy",
     subcommand_value_name = "STRATEGY"
@@ -80,7 +80,6 @@ enum Strategy {
     /// Bump patch version
     Patch,
     /// Bump pre-release version + build metadata
-    #[default]
     PreBuild,
 }
 
@@ -135,6 +134,10 @@ fn main() {
             pre_template,
             build_template,
         } => {
+            let strategy = match strategy {
+                Some(s) => s,
+                None => &Strategy::PreBuild,
+            };
             let version = next_version(
                 &repo,
                 args.tag_prefix.as_str(),
