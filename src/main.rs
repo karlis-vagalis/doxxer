@@ -65,7 +65,6 @@ enum Field {
     Build,
 }
 
-type Increment = u64;
 
 #[derive(Subcommand, Debug)]
 #[clap(
@@ -74,12 +73,21 @@ type Increment = u64;
 )]
 enum Strategy {
     /// Bump major version
-    Major,
+    Major {
+        #[clap(short, long, default_value_t = 1)]
+        increment: u64
+    },
     /// Bump minor version
-    Minor,
+    Minor {
+        #[clap(short, long, default_value_t = 1)]
+        increment: u64
+    },
     /// Bump patch version
-    Patch,
-    /// Bump pre-release version + build metadata
+    Patch {
+        #[clap(short, long, default_value_t = 1)]
+        increment: u64
+    },
+    /// Bump pre-release version + build metadata [default]
     PreBuild,
 }
 

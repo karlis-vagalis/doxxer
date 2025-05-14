@@ -130,17 +130,17 @@ pub fn next_version(
     let mut build = inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash);
 
     match strategy {
-        Strategy::Major => {
-            next.major += 1;
+        Strategy::Major { increment } => {
+            next.major += increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor => {
-            next.minor += 1;
+        Strategy::Minor { increment } => {
+            next.minor += increment;
             next.patch = 0;
         }
-        Strategy::Patch => {
-            next.patch += 1;
+        Strategy::Patch { increment } => {
+            next.patch += increment;
         }
         Strategy::PreBuild => {}
     }
