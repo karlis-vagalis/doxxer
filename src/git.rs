@@ -2,7 +2,7 @@ use git2::{Error, ObjectType, Repository};
 use semver::{BuildMetadata, Prerelease, Version};
 use std::slice::Iter;
 
-use crate::Strategy;
+use crate::{PrereleaseOptions, Strategy};
 
 fn find_tag_name_matching_version(
     repo: &Repository,
@@ -72,35 +72,6 @@ fn find_latest_semver(repo: &Repository, prefix: &str) -> Result<Option<Version>
     Ok(versions.into_iter().next())
 }
 
-fn inject_variables(
-    template: &str,
-    old_pre: &str,
-    commit_count: usize,
-    short_hash: &String,
-) -> String {
-    let mut template = String::from(template);
-    for variable in TemplateVariables::iterator() {
-        match variable {
-            TemplateVariables::Hash => {
-                template = template.replace(variable.as_str(), short_hash.as_str())
-            }
-            TemplateVariables::Distance => {
-                template = template.replace(variable.as_str(), commit_count.to_string().as_str())
-            }
-            TemplateVariables::Pre => template = template.replace(variable.as_str(), old_pre),
-        }
-    }
-    template = match template.strip_prefix(".") {
-        Some(s) => s.to_string(),
-        None => template,
-    };
-    template = match template.strip_suffix(".") {
-        Some(s) => s.to_string(),
-        None => template,
-    };
-    template
-}
-
 pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) -> Version {
     let latest = current_version(repo, tag_prefix);
 
@@ -137,26 +108,14 @@ pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) ->
             next.patch += bump_options.increment;
         }
         Strategy::Prerelease { prerelease_options } => {
-            pre = Prerelease::new(
-                inject_variables(
-                    &prerelease_options.prerelease_template,
-                    next.pre.as_str(),
-                    commit_count,
-                    &short_hash,
-                )
-                .as_str(),
-            )
-            .unwrap();
-            build = BuildMetadata::new(
-                inject_variables(
-                    &prerelease_options.build_template,
-                    next.pre.as_str(),
-                    commit_count,
-                    &short_hash,
-                )
-                .as_str(),
-            )
-            .unwrap();
+            let template_variables = TemplateVariables {
+                pre: next.pre.as_str().to_string(),
+                hash: short_hash,
+                distance: commit_count,
+                identifier: prerelease_options.identifier.clone(),
+            };
+            pre = handle_prerelease(prerelease_options, &template_variables);
+            build = handle_build_metadata(prerelease_options, &template_variables);
         }
         Strategy::PreMajor { prerelease_options } => todo!(),
         Strategy::PreMinor { prerelease_options } => todo!(),
@@ -168,6 +127,14 @@ pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) ->
     next
 }
 
+fn handle_prerelease(options: &PrereleaseOptions, variables: &TemplateVariables) -> Prerelease {
+    Prerelease::new(variables.inject(&options.prerelease_template).as_str()).unwrap()
+}
+
+fn handle_build_metadata(options: &PrereleaseOptions, variables: &TemplateVariables) -> BuildMetadata {
+    BuildMetadata::new(variables.inject(&options.build_template).as_str()).unwrap()
+}
+
 pub fn current_version(repo: &Repository, tag_prefix: &str) -> Version {
     match find_latest_semver(repo, tag_prefix) {
         Ok(Some(v)) => v,
@@ -176,25 +143,38 @@ pub fn current_version(repo: &Repository, tag_prefix: &str) -> Version {
 }
 
 #[derive(Debug)]
-enum TemplateVariables {
-    Pre,
-    Hash,
-    Distance,
+struct TemplateVariables {
+    pre: String,
+    identifier: String,
+    hash: String,
+    distance: usize,
 }
 impl TemplateVariables {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            TemplateVariables::Hash => "{hash}",
-            TemplateVariables::Distance => "{distance}",
-            TemplateVariables::Pre => "{pre}",
-        }
+    fn fields(&self) -> Vec<(&'static str, String)> {
+        vec![
+            ("{pre}", self.pre.clone()),
+            ("{identifier}", self.identifier.clone()),
+            ("{hash}", self.hash.clone()),
+            ("{distance}", self.distance.to_string()),
+        ]
     }
-    pub fn iterator() -> Iter<'static, TemplateVariables> {
-        static TEMPLATE_VARIABLES: [TemplateVariables; 3] = [
-            TemplateVariables::Hash,
-            TemplateVariables::Distance,
-            TemplateVariables::Pre,
-        ];
-        TEMPLATE_VARIABLES.iter()
+
+    fn inject(&self, template: &str) -> String {
+        let mut template = String::from(template);
+        for (field, value) in self.fields() {
+            dbg!(&field, &value);
+            template = template.replace(field, value.as_str());
+            template = match template.strip_prefix(".") {
+                Some(s) => s.to_string(),
+                None => template,
+            };
+            template = match template.strip_suffix(".") {
+                Some(s) => s.to_string(),
+                None => template,
+            };
+        }
+        
+        dbg!(&template);
+        template
     }
 }

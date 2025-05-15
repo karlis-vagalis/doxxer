@@ -97,12 +97,16 @@ enum Strategy {
     },
 }
 
-static DEFAULT_PRERELEASE_TEMPLATE: &str = "{pre}.dev.{distance}";
+static DEFAULT_PRERELEASE_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
 static DEFAULT_BUILD_TEMPLATE: &str = "{hash}";
 static DEFAULT_PRERELEASE_IDENTIFIER: &str = "dev";
 
 #[derive(Args, Debug)]
 struct PrereleaseOptions {
+    /// Prerelease identifier (e.g., alpha, beta, build, ...)
+    #[clap(default_value = DEFAULT_PRERELEASE_IDENTIFIER)]
+    identifier: String,
+
     /// Template for next version's pre-release
     #[clap(short, long, default_value = DEFAULT_PRERELEASE_TEMPLATE)]
     prerelease_template: String,
@@ -110,10 +114,6 @@ struct PrereleaseOptions {
     /// Template for next version's build metadata
     #[clap(short, long, default_value = DEFAULT_BUILD_TEMPLATE)]
     build_template: String,
-
-    /// Prerelease identifier (e.g., alpha, beta, build, ...)
-    #[clap(default_value = DEFAULT_PRERELEASE_IDENTIFIER)]
-    identifier: String
 }
 
 #[derive(Args, Debug)]
