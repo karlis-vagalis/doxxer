@@ -64,19 +64,19 @@ enum Field {
 )]
 enum Strategy {
     /// Bump major version
-    Major {
-        #[clap(short, long, default_value_t = 1)]
-        increment: u64,
+    Major{
+        #[clap(flatten)]
+        bump_options: BumpingOptions
     },
     /// Bump minor version
-    Minor {
-        #[clap(short, long, default_value_t = 1)]
-        increment: u64,
+    Minor{
+        #[clap(flatten)]
+        bump_options: BumpingOptions
     },
     /// Bump patch version
-    Patch {
-        #[clap(short, long, default_value_t = 1)]
-        increment: u64,
+    Patch{
+        #[clap(flatten)]
+        bump_options: BumpingOptions
     },
     /// Bump pre-release version + build metadata [default]
     PreBuild {
@@ -88,6 +88,12 @@ enum Strategy {
         #[clap(short, long, default_value = "{hash}")]
         build_template: String,
     },
+}
+
+#[derive(Args, Debug)]
+struct BumpingOptions {
+    #[clap(short, long, default_value_t = 1)]
+    increment: u64,
 }
 
 /// Output options

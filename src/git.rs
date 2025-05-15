@@ -128,17 +128,17 @@ pub fn next_version(
     let mut build = BuildMetadata::EMPTY;
 
     match strategy {
-        Strategy::Major { increment } => {
-            next.major += increment;
+        Strategy::Major { bump_options} => {
+            next.major += bump_options.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor { increment } => {
-            next.minor += increment;
+        Strategy::Minor{ bump_options} => {
+            next.minor += bump_options.increment;
             next.patch = 0;
         }
-        Strategy::Patch { increment } => {
-            next.patch += increment;
+        Strategy::Patch{ bump_options} => {
+            next.patch += bump_options.increment;
         }
         Strategy::PreBuild {pre_template, build_template} => {
             pre = Prerelease::new(inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash).as_str()).unwrap();
