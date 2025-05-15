@@ -72,7 +72,6 @@ fn find_latest_semver(repo: &Repository, prefix: &str) -> Result<Option<Version>
 }
 
 fn get_inc(pre: &str, identifier: &str) -> usize {
-
     if pre.is_empty() {
         return 1;
     }
@@ -133,20 +132,50 @@ pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) ->
     let mut pre = Prerelease::EMPTY;
     let mut build = BuildMetadata::EMPTY;
 
+    // Set new major/minor/patch versions
     match strategy {
-        Strategy::Major { bump_options } => {
+        Strategy::Major { bump_options }
+        | Strategy::PreMajor {
+            prerelease_options: _,
+            bump_options,
+        } => {
             next.major += bump_options.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor { bump_options } => {
+        Strategy::Minor { bump_options }
+        | Strategy::PreMinor {
+            prerelease_options: _,
+            bump_options,
+        } => {
             next.minor += bump_options.increment;
             next.patch = 0;
         }
-        Strategy::Patch { bump_options } => {
+        Strategy::Patch { bump_options }
+        | Strategy::PrePatch {
+            prerelease_options: _,
+            bump_options,
+        } => {
             next.patch += bump_options.increment;
         }
-        Strategy::Prerelease { prerelease_options } => {
+        Strategy::Prerelease { prerelease_options } => {}
+    }
+
+    // Set new prerelease and metadata
+    match strategy {
+        Strategy::Prerelease { prerelease_options }
+        | Strategy::PreMajor {
+            prerelease_options,
+            bump_options: _,
+        }
+        | Strategy::PreMinor {
+            prerelease_options,
+            bump_options: _,
+        }
+        | Strategy::PrePatch {
+            prerelease_options,
+            bump_options: _,
+        } => {
             let inc = get_inc(next.pre.as_str(), prerelease_options.identifier.as_str());
             let template_variables = TemplateVariables {
                 pre: next.pre.as_str().to_string(),
@@ -158,9 +187,7 @@ pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) ->
             pre = handle_prerelease(prerelease_options, &template_variables);
             build = handle_build_metadata(prerelease_options, &template_variables);
         }
-        Strategy::PreMajor { prerelease_options } => todo!(),
-        Strategy::PreMinor { prerelease_options } => todo!(),
-        Strategy::PrePatch { prerelease_options } => todo!(),
+        _ => {}
     }
 
     next.pre = pre;

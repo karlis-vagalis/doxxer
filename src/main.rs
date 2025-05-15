@@ -86,20 +86,31 @@ enum Strategy {
     PreMajor {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
+
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
     },
     PreMinor {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
+
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
     },
     PrePatch {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
+
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
     },
 }
 
-static DEFAULT_PRERELEASE_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
+static DEFAULT_PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
+static DEFAULT_DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
 static DEFAULT_BUILD_TEMPLATE: &str = "{hash}";
 static DEFAULT_PRERELEASE_IDENTIFIER: &str = "build";
+static DEFAULT_DEV_IDENTIFIER: &str = "dev";
 
 #[derive(Args, Debug)]
 struct PrereleaseOptions {
@@ -172,9 +183,9 @@ fn main() {
                 Some(s) => s,
                 None => &Strategy::Prerelease {
                     prerelease_options: PrereleaseOptions {
-                        prerelease_template: String::from(DEFAULT_PRERELEASE_TEMPLATE),
+                        prerelease_template: String::from(DEFAULT_DEV_TEMPLATE),
                         build_template: String::from(DEFAULT_BUILD_TEMPLATE),
-                        identifier: String::from(DEFAULT_PRERELEASE_IDENTIFIER),
+                        identifier: String::from(DEFAULT_DEV_IDENTIFIER),
                     },
                 },
             };
