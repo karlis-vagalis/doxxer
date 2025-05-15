@@ -64,30 +64,56 @@ enum Field {
 )]
 enum Strategy {
     /// Bump major version
-    Major{
+    Major {
         #[clap(flatten)]
-        bump_options: BumpingOptions
+        bump_options: BumpingOptions,
     },
     /// Bump minor version
-    Minor{
+    Minor {
         #[clap(flatten)]
-        bump_options: BumpingOptions
+        bump_options: BumpingOptions,
     },
     /// Bump patch version
-    Patch{
+    Patch {
         #[clap(flatten)]
-        bump_options: BumpingOptions
+        bump_options: BumpingOptions,
     },
     /// Bump pre-release version + build metadata [default]
-    PreBuild {
-        /// Template for next version's pre-release
-        #[clap(short, long, default_value = "{pre}.dev.{distance}")]
-        pre_template: String,
-
-        /// Template for next version's build metadata
-        #[clap(short, long, default_value = "{hash}")]
-        build_template: String,
+    Prerelease {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
     },
+    PreMajor {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+    },
+    PreMinor {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+    },
+    PrePatch {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+    },
+}
+
+static DEFAULT_PRERELEASE_TEMPLATE: &str = "{pre}.dev.{distance}";
+static DEFAULT_BUILD_TEMPLATE: &str = "{hash}";
+static DEFAULT_PRERELEASE_IDENTIFIER: &str = "dev";
+
+#[derive(Args, Debug)]
+struct PrereleaseOptions {
+    /// Template for next version's pre-release
+    #[clap(short, long, default_value = DEFAULT_PRERELEASE_TEMPLATE)]
+    prerelease_template: String,
+
+    /// Template for next version's build metadata
+    #[clap(short, long, default_value = DEFAULT_BUILD_TEMPLATE)]
+    build_template: String,
+
+    /// Prerelease identifier (e.g., alpha, beta, build, ...)
+    #[clap(default_value = DEFAULT_PRERELEASE_IDENTIFIER)]
+    identifier: String
 }
 
 #[derive(Args, Debug)]
@@ -141,22 +167,18 @@ fn main() {
             let version = current_version(&repo, args.tag_prefix.as_str());
             output_version(field, &version, &args.version_output_options.prefix)
         }
-        Commands::Next {
-            field,
-            strategy,
-        } => {
+        Commands::Next { field, strategy } => {
             let strategy = match strategy {
                 Some(s) => s,
-                None => &Strategy::PreBuild{
-                    pre_template: String::from("{pre}.dev.{distance}"),
-                    build_template: String::from("{hash}"),
+                None => &Strategy::Prerelease {
+                    prerelease_options: PrereleaseOptions {
+                        prerelease_template: String::from(DEFAULT_PRERELEASE_TEMPLATE),
+                        build_template: String::from(DEFAULT_BUILD_TEMPLATE),
+                        identifier: String::from(DEFAULT_PRERELEASE_IDENTIFIER),
+                    },
                 },
             };
-            let version = next_version(
-                &repo,
-                args.tag_prefix.as_str(),
-                strategy
-            );
+            let version = next_version(&repo, args.tag_prefix.as_str(), strategy);
             output_version(field, &version, &args.version_output_options.prefix)
         }
     }

@@ -101,11 +101,7 @@ fn inject_variables(
     template
 }
 
-pub fn next_version(
-    repo: &Repository,
-    tag_prefix: &str,
-    strategy: &Strategy
-) -> Version {
+pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) -> Version {
     let latest = current_version(repo, tag_prefix);
 
     let latest_tag_name =
@@ -128,22 +124,43 @@ pub fn next_version(
     let mut build = BuildMetadata::EMPTY;
 
     match strategy {
-        Strategy::Major { bump_options} => {
+        Strategy::Major { bump_options } => {
             next.major += bump_options.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor{ bump_options} => {
+        Strategy::Minor { bump_options } => {
             next.minor += bump_options.increment;
             next.patch = 0;
         }
-        Strategy::Patch{ bump_options} => {
+        Strategy::Patch { bump_options } => {
             next.patch += bump_options.increment;
         }
-        Strategy::PreBuild {pre_template, build_template} => {
-            pre = Prerelease::new(inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash).as_str()).unwrap();
-            build = BuildMetadata::new(inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash).as_str()).unwrap();
+        Strategy::Prerelease { prerelease_options } => {
+            pre = Prerelease::new(
+                inject_variables(
+                    &prerelease_options.prerelease_template,
+                    next.pre.as_str(),
+                    commit_count,
+                    &short_hash,
+                )
+                .as_str(),
+            )
+            .unwrap();
+            build = BuildMetadata::new(
+                inject_variables(
+                    &prerelease_options.build_template,
+                    next.pre.as_str(),
+                    commit_count,
+                    &short_hash,
+                )
+                .as_str(),
+            )
+            .unwrap();
         }
+        Strategy::PreMajor { prerelease_options } => todo!(),
+        Strategy::PreMinor { prerelease_options } => todo!(),
+        Strategy::PrePatch { prerelease_options } => todo!(),
     }
 
     next.pre = pre;
