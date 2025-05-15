@@ -99,7 +99,7 @@ enum Strategy {
 
 static DEFAULT_PRERELEASE_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
 static DEFAULT_BUILD_TEMPLATE: &str = "{hash}";
-static DEFAULT_PRERELEASE_IDENTIFIER: &str = "dev";
+static DEFAULT_PRERELEASE_IDENTIFIER: &str = "build";
 
 #[derive(Args, Debug)]
 struct PrereleaseOptions {
