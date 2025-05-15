@@ -17,9 +17,8 @@ struct Cli {
     #[clap(short, long, default_value = ".")]
     directory: PathBuf,
 
-    /// Prefix of the tag names used for releases
-    #[clap(short, long, default_value = "v")]
-    tag_prefix: String,
+    #[clap(flatten, next_help_heading = "Filter options")]
+    filter_options: FilterOptions,
 
     #[clap(flatten, next_help_heading = "Output options")]
     version_output_options: OutputOptions,
@@ -36,7 +35,7 @@ enum Commands {
         #[clap(short, long)]
         field: Option<Field>,
     },
-    #[clap(about=format!("Get next version\n\nIf no strategy is provided, falls back to dynamic version template \"{DEFAULT_DEV_TEMPLATE}\" with \"identifier={DEFAULT_DEV_IDENTIFIER}\""))]
+    #[clap(about=format!("Get next version\nIf no strategy is provided, falls back to dynamic version template \"{DEFAULT_DEV_TEMPLATE}\" with \"identifier={DEFAULT_DEV_IDENTIFIER}\""))]
     Next {
         #[clap(subcommand)]
         strategy: Option<Strategy>,
@@ -137,13 +136,21 @@ struct BumpingOptions {
     increment: u64,
 }
 
+#[derive(Debug, Args)]
+#[group(required = false, multiple = false)]
+struct FilterOptions {
+    /// Prefix of the tags used for current version detection
+    #[clap(short, long, default_value = "v")]
+    filter_prefix: String,
+}
+
 /// Output options
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct OutputOptions {
-    /// Add tag prefix to the output version
+    /// Add prefix to the output version
     #[clap(long, short, default_value = "v")]
-    prefix: String,
+    output_prefix: String,
 }
 
 fn output_version(cmd: &Option<Field>, version: &Version, output_prefix: &str) {
@@ -179,8 +186,8 @@ fn main() {
 
     match &args.cmd {
         Commands::Current { field } => {
-            let version = current_version(&repo, args.tag_prefix.as_str());
-            output_version(field, &version, &args.version_output_options.prefix)
+            let version = current_version(&repo, &args.filter_options.filter_prefix);
+            output_version(field, &version, &args.version_output_options.output_prefix)
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
@@ -193,8 +200,8 @@ fn main() {
                     },
                 },
             };
-            let version = next_version(&repo, args.tag_prefix.as_str(), strategy);
-            output_version(field, &version, &args.version_output_options.prefix)
+            let version = next_version(&repo, &args.filter_options.filter_prefix, strategy);
+            output_version(field, &version, &args.version_output_options.output_prefix)
         }
     }
 }
