@@ -158,7 +158,7 @@ pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) ->
         } => {
             next.patch += bump_options.increment;
         }
-        Strategy::Prerelease { prerelease_options } => {}
+        Strategy::Prerelease { prerelease_options: _ } => {}
     }
 
     // Set new prerelease and metadata
