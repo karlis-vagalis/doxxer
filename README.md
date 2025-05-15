@@ -1,12 +1,14 @@
-`doxxer` is an extremely configurable CLI tool written in Rust that simplifies
-and automates dynamic [SemVer](https://semver.org/) versioning by leveraging the
-latest Git tags and commits.
+✨**doxxer**✨ is an extremely configurable CLI tool written in *Rust* that
+simplifies and automates dynamic [SemVer](https://semver.org/) versioning by
+leveraging the latest Git tags and commits.
 
-It includes tag filtering, output version prefexes, many version bumping mechanism
-and is the perfect tool to generate dynamic version on the fly. No more project programming language specific solution to handle this!
+It includes tag filtering, output version prefexes, many version bumping mechanisms
+and is the perfect tool to generate dynamic version on the fly. No more project 
+programming language specific solution to handle this!
 
 This approach was heavily inspired by the output produced by the native
-`git decribe --tags`, which was my own de-facto soltuin for dynamic versioning of software projects.
+`git decribe --tags`, which was my own de-facto soltuin for dynamic versioning of
+software projects.
 
 ![image info](./docs/demo.gif)
 
@@ -109,7 +111,7 @@ Default behaviour of the `next` command is ideal for generating development vers
 
 # FAQ
 
-1. Why is the default strategy `pre-build` and not `patch`?
+1. Why is does the default strategy for `next` appends second pre-release?
 
 Because the original idea and goal of this tool is to dynamically generate version
 for a project, when iterating/developing. So, the defaults reflect this goal and
@@ -118,7 +120,7 @@ thus, require least amount of configuration.
 2. Why is the project called `doxxer`?
 
 Because it's like somebody who [doxes](https://en.wikipedia.org/wiki/Doxing), by
-exposing the version information about Git repo to you!
+exposing the version information about Git repo to you! It the name really fitting? Maybe no. It's just a name.
 
 3. Why rust?
 
