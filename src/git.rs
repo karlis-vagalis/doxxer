@@ -1,8 +1,7 @@
 use git2::{Error, ObjectType, Repository};
 use semver::{BuildMetadata, Prerelease, Version};
-use std::slice::Iter;
 
-use crate::Strategy;
+use crate::{PrereleaseOptions, Strategy};
 
 fn find_tag_name_matching_version(
     repo: &Repository,
@@ -72,42 +71,46 @@ fn find_latest_semver(repo: &Repository, prefix: &str) -> Result<Option<Version>
     Ok(versions.into_iter().next())
 }
 
-fn inject_variables(
-    template: &str,
-    old_pre: &str,
-    commit_count: usize,
-    short_hash: &String,
-) -> String {
-    let mut template = String::from(template);
-    for variable in TemplateVariables::iterator() {
-        match variable {
-            TemplateVariables::Hash => {
-                template = template.replace(variable.as_str(), short_hash.as_str())
-            }
-            TemplateVariables::Distance => {
-                template = template.replace(variable.as_str(), commit_count.to_string().as_str())
-            }
-            TemplateVariables::Pre => template = template.replace(variable.as_str(), old_pre),
-        }
+fn get_inc(pre: &str, identifier: &str) -> usize {
+    if pre.is_empty() {
+        return 1;
     }
-    template = match template.strip_prefix(".") {
-        Some(s) => s.to_string(),
-        None => template,
-    };
-    template = match template.strip_suffix(".") {
-        Some(s) => s.to_string(),
-        None => template,
-    };
-    template
+
+    if pre.starts_with(identifier) {
+        // Current pre-release starts with the target identifier
+        let suffix = &pre[identifier.len()..];
+        if suffix.is_empty() {
+            return 2; // Identifier matches, no number, next is 2
+        }
+
+        // Try to parse a numeric suffix from the end
+        let mut numeric_part = String::new();
+        for char in suffix.chars().rev() {
+            if char.is_digit(10) {
+                numeric_part.insert(0, char);
+            } else {
+                break; // Stop when a non-digit is encountered
+            }
+        }
+
+        if !numeric_part.is_empty() {
+            if let Ok(n) = numeric_part.parse::<usize>() {
+                return n + 1;
+            } else {
+                // Parsing failed, but we found digits, so assume it was 1 initially
+                return 2;
+            }
+        } else {
+            // Identifier matches, but no numeric suffix found
+            return 2;
+        }
+    } else {
+        // Identifier does not match, start at 1
+        return 1;
+    }
 }
 
-pub fn next_version(
-    repo: &Repository,
-    tag_prefix: &str,
-    strategy: &Strategy,
-    pre_template: &str,
-    build_template: &str,
-) -> Version {
+pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) -> Version {
     let latest = current_version(repo, tag_prefix);
 
     let latest_tag_name =
@@ -126,36 +129,81 @@ pub fn next_version(
 
     let mut next = latest;
 
-    let mut pre = inject_variables(pre_template, next.pre.as_str(), commit_count, &short_hash);
-    let mut build = inject_variables(build_template, next.pre.as_str(), commit_count, &short_hash);
+    let mut pre = Prerelease::EMPTY;
+    let mut build = BuildMetadata::EMPTY;
 
+    // Set new major/minor/patch versions
     match strategy {
-        Strategy::Major => {
-            next.major += 1;
+        Strategy::Major { bump_options }
+        | Strategy::PreMajor {
+            prerelease_options: _,
+            bump_options,
+        } => {
+            next.major += bump_options.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor => {
-            next.minor += 1;
+        Strategy::Minor { bump_options }
+        | Strategy::PreMinor {
+            prerelease_options: _,
+            bump_options,
+        } => {
+            next.minor += bump_options.increment;
             next.patch = 0;
         }
-        Strategy::Patch => {
-            next.patch += 1;
+        Strategy::Patch { bump_options }
+        | Strategy::PrePatch {
+            prerelease_options: _,
+            bump_options,
+        } => {
+            next.patch += bump_options.increment;
         }
-        Strategy::PreBuild => {}
+        Strategy::Prerelease { prerelease_options: _ } => {}
     }
 
+    // Set new prerelease and metadata
     match strategy {
-        Strategy::PreBuild => {}
-        _ => {
-            pre = String::new();
-            build = String::new();
+        Strategy::Prerelease { prerelease_options }
+        | Strategy::PreMajor {
+            prerelease_options,
+            bump_options: _,
         }
+        | Strategy::PreMinor {
+            prerelease_options,
+            bump_options: _,
+        }
+        | Strategy::PrePatch {
+            prerelease_options,
+            bump_options: _,
+        } => {
+            let inc = get_inc(next.pre.as_str(), prerelease_options.identifier.as_str());
+            let template_variables = TemplateVariables {
+                pre: next.pre.as_str().to_string(),
+                inc: inc,
+                hash: short_hash,
+                distance: commit_count,
+                identifier: prerelease_options.identifier.clone(),
+            };
+            pre = handle_prerelease(prerelease_options, &template_variables);
+            build = handle_build_metadata(prerelease_options, &template_variables);
+        }
+        _ => {}
     }
 
-    next.pre = Prerelease::new(pre.as_str()).unwrap();
-    next.build = BuildMetadata::new(build.as_str()).unwrap();
+    next.pre = pre;
+    next.build = build;
     next
+}
+
+fn handle_prerelease(options: &PrereleaseOptions, variables: &TemplateVariables) -> Prerelease {
+    Prerelease::new(variables.inject(&options.prerelease_template).as_str()).unwrap()
+}
+
+fn handle_build_metadata(
+    options: &PrereleaseOptions,
+    variables: &TemplateVariables,
+) -> BuildMetadata {
+    BuildMetadata::new(variables.inject(&options.build_template).as_str()).unwrap()
 }
 
 pub fn current_version(repo: &Repository, tag_prefix: &str) -> Version {
@@ -166,25 +214,40 @@ pub fn current_version(repo: &Repository, tag_prefix: &str) -> Version {
 }
 
 #[derive(Debug)]
-enum TemplateVariables {
-    Pre,
-    Hash,
-    Distance,
+struct TemplateVariables {
+    pre: String,
+    inc: usize,
+    identifier: String,
+    hash: String,
+    distance: usize,
 }
 impl TemplateVariables {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            TemplateVariables::Hash => "{hash}",
-            TemplateVariables::Distance => "{distance}",
-            TemplateVariables::Pre => "{pre}",
-        }
+    fn fields(&self) -> Vec<(&'static str, String)> {
+        vec![
+            ("{pre}", self.pre.clone()),
+            ("{inc}", self.inc.to_string()),
+            ("{identifier}", self.identifier.clone()),
+            ("{hash}", self.hash.clone()),
+            ("{distance}", self.distance.to_string()),
+        ]
     }
-    pub fn iterator() -> Iter<'static, TemplateVariables> {
-        static TEMPLATE_VARIABLES: [TemplateVariables; 3] = [
-            TemplateVariables::Hash,
-            TemplateVariables::Distance,
-            TemplateVariables::Pre,
-        ];
-        TEMPLATE_VARIABLES.iter()
+
+    fn inject(&self, template: &str) -> String {
+        let mut template = String::from(template);
+        for (field, value) in self.fields() {
+            //dbg!(&field, &value);
+            template = template.replace(field, value.as_str());
+            template = match template.strip_prefix(".") {
+                Some(s) => s.to_string(),
+                None => template,
+            };
+            template = match template.strip_suffix(".") {
+                Some(s) => s.to_string(),
+                None => template,
+            };
+        }
+
+        //dbg!(&template);
+        template
     }
 }

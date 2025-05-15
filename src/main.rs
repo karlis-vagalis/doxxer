@@ -3,7 +3,7 @@ mod git;
 use clap::builder::styling::{Effects, RgbColor, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use semver::Version;
-use std::{fmt, path::PathBuf};
+use std::path::PathBuf;
 
 use git::{current_version, next_version};
 
@@ -11,15 +11,14 @@ use git2::Repository;
 
 /// Dynamic version manager for Git
 #[derive(Parser, Debug)]
-#[clap(version, color = clap::ColorChoice::Auto, styles=get_styles())]
+#[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
 struct Cli {
     /// Path to the Git repository
     #[clap(short, long, default_value = ".")]
     directory: PathBuf,
 
-    /// Prefix of the tag names used for releases
-    #[clap(short, long, default_value = "v")]
-    tag_prefix: String,
+    #[clap(flatten, next_help_heading = "Filter options")]
+    filter_options: FilterOptions,
 
     #[clap(flatten, next_help_heading = "Output options")]
     version_output_options: OutputOptions,
@@ -30,83 +29,141 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Returns current version string from latest tag
+    /// Get current version
     Current {
-        #[command(subcommand)]
-        cmd: Option<PartCommands>,
+        /// Field/part of the version
+        #[clap(short, long)]
+        field: Option<Field>,
     },
-    /// Returns next version string
+    #[clap(about=format!("Get next version\nIf no strategy is provided, falls back to dynamic version template \"{DEFAULT_DEV_TEMPLATE}\" with \"identifier={DEFAULT_DEV_IDENTIFIER}\""))]
     Next {
-        /// Bumping strategy
-        #[clap(short, long, value_parser = clap::value_parser!(Strategy), default_value_t)]
-        strategy: Strategy,
+        #[clap(subcommand)]
+        strategy: Option<Strategy>,
 
-        /// Template for next version's pre-release
-        #[clap(short, long, default_value = "{pre}.dev.{distance}")]
-        pre_template: String,
-
-        /// Template for next version's build metadata
-        #[clap(short, long, default_value = "{hash}")]
-        build_template: String,
-
-        #[command(subcommand)]
-        cmd: Option<PartCommands>,
+        /// Field/part of the version
+        #[clap(short, long)]
+        field: Option<Field>,
     },
 }
 
-#[derive(Subcommand, Debug)]
-enum PartCommands {
-    /// Get major version
+#[derive(ValueEnum, Clone, Debug)]
+enum Field {
     Major,
-    /// Get minor version
     Minor,
-    /// Get patch version
     Patch,
-    /// Get pre-release version
     Pre,
-    /// Get build metadata
     Build,
 }
 
-#[derive(ValueEnum, Clone, Debug, Default)]
+/// Bumping strategy
+#[derive(Subcommand, Debug)]
+#[clap(
+    subcommand_help_heading = "Bumping strategy",
+    subcommand_value_name = "STRATEGY"
+)]
 enum Strategy {
-    Major,
-    Minor,
-    Patch,
-    #[default]
-    PreBuild,
+    /// Major version
+    Major {
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
+    },
+    /// Minor version
+    Minor {
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
+    },
+    /// Patch version
+    Patch {
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
+    },
+    /// Pre-release version
+    Prerelease {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+    },
+    /// Major + pre-release version
+    PreMajor {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
+    },
+    /// Minor + pre-release version
+    PreMinor {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
+    },
+    /// Patch + pre-release version
+    PrePatch {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+
+        #[clap(flatten)]
+        bump_options: BumpingOptions,
+    },
 }
-impl fmt::Display for Strategy {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Strategy::Major => write!(f, "major"),
-            Strategy::Minor => write!(f, "minor"),
-            Strategy::Patch => write!(f, "patch"),
-            Strategy::PreBuild => write!(f, "pre-build"),
-        }
-    }
+
+static DEFAULT_PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
+static DEFAULT_DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
+static DEFAULT_BUILD_TEMPLATE: &str = "{hash}";
+static DEFAULT_PRERELEASE_IDENTIFIER: &str = "build";
+static DEFAULT_DEV_IDENTIFIER: &str = "dev";
+
+#[derive(Args, Debug)]
+struct PrereleaseOptions {
+    /// Prerelease identifier (e.g., alpha, beta, build, ...)
+    #[clap(default_value = DEFAULT_PRERELEASE_IDENTIFIER)]
+    identifier: String,
+
+    /// Template for next version's pre-release
+    #[clap(short, long, default_value = DEFAULT_PRERELEASE_TEMPLATE)]
+    prerelease_template: String,
+
+    /// Template for next version's build metadata
+    #[clap(short, long, default_value = DEFAULT_BUILD_TEMPLATE)]
+    build_template: String,
+}
+
+#[derive(Args, Debug)]
+struct BumpingOptions {
+    /// Bump increment
+    #[clap(short, long, default_value_t = 1)]
+    increment: u64,
+}
+
+#[derive(Debug, Args)]
+#[group(required = false, multiple = false)]
+struct FilterOptions {
+    /// Prefix of the tags used for current version detection
+    #[clap(short, long, default_value = "v")]
+    filter_prefix: String,
 }
 
 /// Output options
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct OutputOptions {
-    /// Add tag prefix to the output version
+    /// Add prefix to the output version
     #[clap(long, short, default_value = "v")]
-    prefix: String,
+    output_prefix: String,
 }
 
-fn output_version(cmd: &Option<PartCommands>, version: &Version, output_prefix: &str) {
+fn output_version(cmd: &Option<Field>, version: &Version, output_prefix: &str) {
     match cmd {
         None => {
             println!("{}{}", output_prefix, version);
         }
         Some(part) => match part {
-            PartCommands::Major => println!("{}", version.major),
-            PartCommands::Minor => println!("{}", version.minor),
-            PartCommands::Patch => println!("{}", version.patch),
-            PartCommands::Pre => println!("{}", version.pre),
-            PartCommands::Build => println!("{}", version.build),
+            Field::Major => println!("{}", version.major),
+            Field::Minor => println!("{}", version.minor),
+            Field::Patch => println!("{}", version.patch),
+            Field::Pre => println!("{}", version.pre),
+            Field::Build => println!("{}", version.build),
         },
     }
 }
@@ -128,24 +185,23 @@ fn main() {
     };
 
     match &args.cmd {
-        Commands::Current { cmd } => {
-            let version = current_version(&repo, args.tag_prefix.as_str());
-            output_version(cmd, &version, &args.version_output_options.prefix)
+        Commands::Current { field } => {
+            let version = current_version(&repo, &args.filter_options.filter_prefix);
+            output_version(field, &version, &args.version_output_options.output_prefix)
         }
-        Commands::Next {
-            cmd,
-            strategy,
-            pre_template,
-            build_template,
-        } => {
-            let version = next_version(
-                &repo,
-                args.tag_prefix.as_str(),
-                strategy,
-                pre_template.as_str(),
-                build_template.as_str(),
-            );
-            output_version(cmd, &version, &args.version_output_options.prefix)
+        Commands::Next { field, strategy } => {
+            let strategy = match strategy {
+                Some(s) => s,
+                None => &Strategy::Prerelease {
+                    prerelease_options: PrereleaseOptions {
+                        prerelease_template: String::from(DEFAULT_DEV_TEMPLATE),
+                        build_template: String::from(DEFAULT_BUILD_TEMPLATE),
+                        identifier: String::from(DEFAULT_DEV_IDENTIFIER),
+                    },
+                },
+            };
+            let version = next_version(&repo, &args.filter_options.filter_prefix, strategy);
+            output_version(field, &version, &args.version_output_options.output_prefix)
         }
     }
 }
