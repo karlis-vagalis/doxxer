@@ -17,3 +17,6 @@ semver = "1.0.26"
 
 [profile.release]
 lto = true
+
+[target.x86_64-apple-darwin.dependencies]
+openssl = { version = "0.10.72", features = ["vendored"] }
