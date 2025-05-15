@@ -30,13 +30,13 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Returns current version
+    /// Get current version
     Current {
         /// Field/part of the version
         #[clap(short, long)]
         field: Option<Field>,
     },
-    /// Returns next version
+    #[clap(about=format!("Get next version\n\nIf no strategy is provided, falls back to dynamic version template \"{DEFAULT_DEV_TEMPLATE}\" with \"identifier={DEFAULT_DEV_IDENTIFIER}\""))]
     Next {
         #[clap(subcommand)]
         strategy: Option<Strategy>,
@@ -63,26 +63,27 @@ enum Field {
     subcommand_value_name = "STRATEGY"
 )]
 enum Strategy {
-    /// Bump major version
+    /// Major version
     Major {
         #[clap(flatten)]
         bump_options: BumpingOptions,
     },
-    /// Bump minor version
+    /// Minor version
     Minor {
         #[clap(flatten)]
         bump_options: BumpingOptions,
     },
-    /// Bump patch version
+    /// Patch version
     Patch {
         #[clap(flatten)]
         bump_options: BumpingOptions,
     },
-    /// Bump pre-release version + build metadata [default]
+    /// Pre-release version
     Prerelease {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
     },
+    /// Major + pre-release version
     PreMajor {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
@@ -90,6 +91,7 @@ enum Strategy {
         #[clap(flatten)]
         bump_options: BumpingOptions,
     },
+    /// Minor + pre-release version
     PreMinor {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
@@ -97,6 +99,7 @@ enum Strategy {
         #[clap(flatten)]
         bump_options: BumpingOptions,
     },
+    /// Patch + pre-release version
     PrePatch {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
@@ -129,6 +132,7 @@ struct PrereleaseOptions {
 
 #[derive(Args, Debug)]
 struct BumpingOptions {
+    /// Bump increment
     #[clap(short, long, default_value_t = 1)]
     increment: u64,
 }
