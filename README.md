@@ -16,7 +16,7 @@ software projects.
 
 ## Getting started
 
-To install from cargo:
+You can currenly install the tool locally via *cargo*:
 
 ```bash
 cargo install doxxer
@@ -108,6 +108,40 @@ Default behaviour of the `next` command is ideal for generating development vers
 | `{inc}` | Next version for specified `{identifier}` |
 | `{hash}` | First 7-digits of the commit hash |
 | `{distance}` | Count of commits since last tag |
+
+# Docker
+
+There is a docker image based on latest `alpine` image and published on GitHub's containter registry: `ghcr.io/karlis-vagalis/doxxer`
+
+## Settings
+
+The default workspace directory inside the container is `/repo`.
+
+The entrypoint is `doxxer`.
+
+
+## Examples
+
+To execute `doxxer next` command once, you could run:
+
+```bash
+docker run --rm -v .:/repo -it ghcr.io/karlis-vagalis/doxxer:latest doxxer next
+```
+
+where, we mount current (`.`) directory inside the container and execute `next` subcommand.
+
+## As base image
+
+If you want to include *doxxer* binary inside your custom docker image, you can copy the binary like so:
+
+```dockerfile
+FROM ghcr.io/karlis-vagalis/doxxer:latest AS base
+...
+COPY --from=base /bin/doxxer /bin
+...
+```
+
+where we copy the binary to the `/bin` folder in our new image.
 
 # FAQ
 
