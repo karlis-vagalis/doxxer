@@ -181,10 +181,10 @@ fn main() {
 
     let repo = match Repository::open(&args.directory) {
         Ok(repo) => repo,
-        Err(e) =>  {
+        Err(e) => {
             eprintln!("Issue opening repository: {}!", e.message());
             std::process::exit(1);
-        },
+        }
     };
 
     match &args.cmd {
