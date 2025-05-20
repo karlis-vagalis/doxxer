@@ -7,27 +7,25 @@ default-tag := "latest"
 current-version := `cargo run -- -o "" current`
 current-tag := `cargo run -- current`
 
-build triple:
-    docker run --rm --volume .:/root/src \
-        --workdir /root/src joseluisq/rust-linux-darwin-builder:1.85 \
-        sh -c "cargo build --release --target {{triple}}"
+build-cross triple:
+    cross build --release --target {{triple}}
 
-encapsulate triple:
+build-windows:
+    docker run --rm -it -v $(pwd):/io -w /io messense/cargo-xwin cargo xwin build --release --target x86_64-pc-windows-msvc
+
+encapsulate triple extension:
     #!/usr/bin/env bash
     set -euxo pipefail
     name="{{project}}-{{triple}}"
     mkdir $name
-    cp ./target/{{triple}}/release/{{project}} ./$name
+    cp ./target/{{triple}}/release/{{project}}{{extension}} ./$name
     tar -czvf $name.tar.gz $name
     rm -r $name
 
-assets triple:
-    just build {{triple}}
-    just encapsulate {{triple}}
-
 build-release:
-    just assets "x86_64-unknown-linux-gnu"
-    just assets "x86_64-unknown-linux-musl"
+    just build-cross "x86_64-unknown-linux-gnu"
+    just build-cross "x86_64-unknown-linux-musl"
+    just build-windows
 
 build-docker:
     docker buildx build \
