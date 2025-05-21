@@ -15,7 +15,7 @@ use git2::Repository;
 #[derive(Parser, Debug)]
 #[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
 struct Cli {
-    #[clap(short, long, help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
+    #[clap(short, long, value_name="REPOSITORY", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
     directory: Option<PathBuf>,
 
     #[clap(flatten, next_help_heading = "Filter options")]
@@ -134,7 +134,7 @@ struct BumpingOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct FilterOptions {
-    #[clap(short, long, help=format!("Prefix of the tags used for current version detection [default: {}]", default::FILTER))]
+    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression used for filtering tags [default: {}]", default::FILTER))]
     filter: Option<String>,
 }
 
@@ -176,7 +176,7 @@ fn main() {
 
     settings.apply(&args);
 
-    let repo = match Repository::open(settings.directory) {
+    let repo = match Repository::open(std::path::absolute(settings.directory).unwrap()) {
         Ok(repo) => repo,
         Err(e) => {
             eprintln!("Issue opening repository: {}!", e.message());
