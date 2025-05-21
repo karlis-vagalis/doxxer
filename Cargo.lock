@@ -275,6 +275,7 @@ dependencies = [
  "clap",
  "config",
  "git2",
+ "once_cell",
  "regex",
  "semver",
 ]

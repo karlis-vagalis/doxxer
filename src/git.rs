@@ -1,11 +1,14 @@
 use git2::{Error, ObjectType, Repository};
+use once_cell::sync::Lazy;
 use semver::{BuildMetadata, Prerelease, Version};
 
 use crate::{PrereleaseOptions, Strategy};
 
 use regex::Regex;
 
-static SEMVER_REGEX: &str = r"(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?";
+static SEMVER_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?").unwrap()
+});
 
 fn find_tag_name_matching_version(
     repo: &Repository,
@@ -51,12 +54,11 @@ fn get_short_head_hash(repo: &Repository) -> Result<String, Error> {
 
 fn find_latest_semver(repo: &Repository, filter: &Regex) -> Result<Option<Version>, Error> {
     let mut versions: Vec<Version> = Vec::new();
-    let re = Regex::new(SEMVER_REGEX).unwrap();
     let _ = repo.tag_foreach(|_id, name_bytes| {
         if let Ok(name) = String::from_utf8(name_bytes.to_vec()) {
             if let Some(tag_name) = name.strip_prefix("refs/tags/") {
                 if filter.is_match(tag_name) {
-                    if let Some(captures) = re.find(tag_name) {
+                    if let Some(captures) = SEMVER_REGEX.find(tag_name) {
                         let matched_str = captures.as_str();
                         if let Ok(version) = Version::parse(matched_str) {
                             versions.push(version);
