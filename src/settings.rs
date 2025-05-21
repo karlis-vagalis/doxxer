@@ -16,9 +16,11 @@ pub mod default {
     pub static INCREMENT: u64 = 1;
 }
 
+#[derive(Debug)]
 pub struct Settings {
     pub directory: PathBuf,
     pub filter_prefix: String,
+    pub output_prefix: String,
 }
 impl Default for Settings{
     fn default() -> Self {
@@ -37,8 +39,12 @@ impl Default for Settings{
             Ok(prefix) => prefix,
             Err(_) => default::FILTER_PREFIX.to_string(),
         };
+        let output_prefix = match config.get_string("output_prefix") {
+            Ok(prefix) => prefix,
+            Err(_) => default::OUTPUT_PREFIX.to_string(),
+        };
 
-        Self { directory, filter_prefix }
+        Self { directory, filter_prefix, output_prefix }
     }
 }
 impl Settings {
@@ -49,5 +55,9 @@ impl Settings {
         if let Some(prefix) = &args.filter_options.filter_prefix {
             self.filter_prefix = prefix.clone();
         };
+        if let Some(prefix) = &args.version_output_options.output_prefix {
+            self.output_prefix = prefix.clone();
+        };
+        //dbg!(&self);
     }
 }

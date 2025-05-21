@@ -134,8 +134,7 @@ struct BumpingOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct FilterOptions {
-    /// Prefix of the tags used for current version detection
-    #[clap(short, long)]
+    #[clap(short, long, help=format!("Prefix of the tags used for current version detection [default: {}]", default::FILTER_PREFIX))]
     filter_prefix: Option<String>,
 }
 
@@ -143,9 +142,8 @@ struct FilterOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct OutputOptions {
-    /// Add prefix to the output version
-    #[clap(long, short, default_value = default::OUTPUT_PREFIX)]
-    output_prefix: String,
+    #[clap(long, short, help=format!("Add prefix to the output version [default: {}]", default::OUTPUT_PREFIX))]
+    output_prefix: Option<String>,
 }
 
 fn output_version(cmd: &Option<Field>, version: &Version, output_prefix: &str) {
@@ -189,7 +187,7 @@ fn main() {
     match &args.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &settings.filter_prefix);
-            output_version(field, &version, &args.version_output_options.output_prefix)
+            output_version(field, &version, &settings.output_prefix)
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
@@ -203,7 +201,7 @@ fn main() {
                 },
             };
             let version = next_version(&repo, &settings.filter_prefix, strategy);
-            output_version(field, &version, &args.version_output_options.output_prefix)
+            output_version(field, &version, &settings.output_prefix)
         }
     }
 }
