@@ -7,7 +7,7 @@ use semver::Version;
 use std::path::PathBuf;
 
 use git::{current_version, next_version};
-use settings::{apply_config, default, get_config, Settings};
+use settings::{default, Settings};
 
 use git2::Repository;
 
@@ -15,8 +15,7 @@ use git2::Repository;
 #[derive(Parser, Debug)]
 #[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
 struct Cli {
-    /// Path to the Git repository
-    #[clap(short, long)]
+    #[clap(short, long, help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
     directory: Option<PathBuf>,
 
     #[clap(flatten, next_help_heading = "Filter options")]
@@ -136,8 +135,8 @@ struct BumpingOptions {
 #[group(required = false, multiple = false)]
 struct FilterOptions {
     /// Prefix of the tags used for current version detection
-    #[clap(short, long, default_value = default::FILTER_PREFIX)]
-    filter_prefix: String,
+    #[clap(short, long)]
+    filter_prefix: Option<String>,
 }
 
 /// Output options

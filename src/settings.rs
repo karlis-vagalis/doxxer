@@ -4,6 +4,18 @@ use config::Config;
 
 use crate::{Cli, FilterOptions, OutputOptions};
 
+pub mod default {
+    pub static DIRECTORY: &str = ".";
+    pub static FILTER_PREFIX: &str = "v";
+    pub static OUTPUT_PREFIX: &str = "v";
+    pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
+    pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
+    pub static BUILD_TEMPLATE: &str = "{hash}";
+    pub static PRERELEASE_IDENTIFIER: &str = "build";
+    pub static DEV_IDENTIFIER: &str = "dev";
+    pub static INCREMENT: u64 = 1;
+}
+
 pub struct Settings {
     pub directory: PathBuf,
     pub filter_prefix: String,
@@ -34,93 +46,8 @@ impl Settings {
         if let Some(directory) = &args.directory {
             self.directory = directory.clone();
         };
+        if let Some(prefix) = &args.filter_options.filter_prefix {
+            self.filter_prefix = prefix.clone();
+        };
     }
-}
-
-pub mod default {
-    pub static DIRECTORY: &str = ".";
-    pub static FILTER_PREFIX: &str = "v";
-    pub static OUTPUT_PREFIX: &str = "v";
-    pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
-    pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
-    pub static BUILD_TEMPLATE: &str = "{hash}";
-    pub static PRERELEASE_IDENTIFIER: &str = "build";
-    pub static DEV_IDENTIFIER: &str = "dev";
-    pub static INCREMENT: u64 = 1;
-}
-
-pub fn get_config() -> Config {
-    Config::builder()
-        .add_source(config::File::with_name(".doxxer").required(false))
-        .add_source(config::File::with_name("doxxer").required(false))
-        .add_source(config::Environment::with_prefix("DOXXER"))
-        .build()
-        .unwrap()
-}
-
-pub fn apply_config(mut args: Cli, settings: Config) -> Cli {
-    dbg!(&settings);
-
-    if let Ok(s) = settings.get_string("filter_prefix") {
-        args.filter_options = FilterOptions { filter_prefix: s }
-    }
-    if let Ok(s) = settings.get_string("output_prefix") {
-        args.version_output_options = OutputOptions { output_prefix: s }
-    }
-
-    match &mut args.cmd {
-        crate::Commands::Current { field: _ } => {}
-        crate::Commands::Next { strategy, field: _ } => {
-            match strategy {
-                Some(s) => {
-                    let i = settings.get_int("increment").and_then(|v| Ok(v as u64));
-                    match s {
-                        crate::Strategy::Major { bump_options } => {
-                            if let Ok(i) = i {
-                                bump_options.increment = i
-                            }
-                        }
-                        crate::Strategy::Minor { bump_options } =>  {
-                            if let Ok(i) = i {
-                                bump_options.increment = i
-                            }
-                        },
-                        crate::Strategy::Patch { bump_options } =>  {
-                            if let Ok(i) = i {
-                                bump_options.increment = i
-                            }
-                        },
-                        crate::Strategy::Prerelease { prerelease_options } => todo!(),
-                        crate::Strategy::PreMajor {
-                            prerelease_options,
-                            bump_options,
-                        } =>  {
-                            if let Ok(i) = i {
-                                bump_options.increment = i
-                            }
-                        },
-                        crate::Strategy::PreMinor {
-                            prerelease_options,
-                            bump_options,
-                        } =>  {
-                            if let Ok(i) = i {
-                                bump_options.increment = i
-                            }
-                        },
-                        crate::Strategy::PrePatch {
-                            prerelease_options,
-                            bump_options,
-                        } =>  {
-                            if let Ok(i) = i {
-                                bump_options.increment = i
-                            }
-                        },
-                    }
-                }
-                None => {},
-            };
-        }
-    }
-
-    args
 }
