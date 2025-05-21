@@ -32,12 +32,12 @@ impl Default for Settings {
 }
 impl From<&PathBuf> for Settings {
     fn from(config_path: &PathBuf) -> Self {
-        let config = Settings::load_config(Some(config_path.clone()));
+        let config = Settings::load_config(Some(config_path));
         Settings::apply_config(config)
     }
 }
 impl Settings {
-    fn load_config(config_path: Option<PathBuf>) -> Config {
+    fn load_config(config_path: Option<&PathBuf>) -> Config {
         let mut config = Config::builder();
 
         match config_path {
