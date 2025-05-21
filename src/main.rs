@@ -18,6 +18,9 @@ struct Cli {
     #[clap(short, long, value_name="REPOSITORY", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
     directory: Option<PathBuf>,
 
+    #[clap(short, long, value_name="PATH", help="Path to the config file")]
+    config: Option<PathBuf>,
+
     #[clap(flatten, next_help_heading = "Filter options")]
     filter_options: FilterOptions,
 
@@ -142,8 +145,10 @@ struct FilterOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct OutputOptions {
-    #[clap(long, short, help=format!("Add prefix to the output version [default: {}]", default::OUTPUT_PREFIX))]
+    #[clap(long, short='p', help=format!("Add prefix to the output version [default: {}]", default::OUTPUT_PREFIX))]
     output_prefix: Option<String>,
+    #[clap(long, short='s', help=format!("Add suffix to the output version [default: {}]", default::OUTPUT_SUFFIX))]
+    output_suffix: Option<String>
 }
 
 fn output_version(cmd: &Option<Field>, version: &Version, output_prefix: &str) {
@@ -175,7 +180,7 @@ fn main() {
 
     settings.apply(&args);
 
-    let repo = match Repository::open(std::path::absolute(settings.directory).unwrap()) {
+    let repo = match Repository::open(settings.directory) {
         Ok(repo) => repo,
         Err(e) => {
             eprintln!("Issue opening repository: {}!", e.message());

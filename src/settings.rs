@@ -9,6 +9,7 @@ pub mod default {
     pub static DIRECTORY: &str = ".";
     pub static FILTER: &str = "^v";
     pub static OUTPUT_PREFIX: &str = "v";
+    pub static OUTPUT_SUFFIX: &str = "";
     pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
     pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
     pub static BUILD_TEMPLATE: &str = "{hash}";
@@ -64,5 +65,8 @@ impl Settings {
             self.output_prefix = prefix.clone();
         };
         //dbg!(&self);
+
+        // Convert path to the absolute path
+        self.directory = std::path::absolute(&self.directory).unwrap();
     }
 }
