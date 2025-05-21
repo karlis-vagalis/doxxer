@@ -55,7 +55,7 @@ impl Settings {
         if let Some(prefix) = &args.filter_options.filter_prefix {
             self.filter_prefix = prefix.clone();
         };
-        if let Some(prefix) = &args.version_output_options.output_prefix {
+        if let Some(prefix) = &args.output_options.output_prefix {
             self.output_prefix = prefix.clone();
         };
         //dbg!(&self);

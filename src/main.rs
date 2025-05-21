@@ -22,7 +22,7 @@ struct Cli {
     filter_options: FilterOptions,
 
     #[clap(flatten, next_help_heading = "Output options")]
-    version_output_options: OutputOptions,
+    output_options: OutputOptions,
 
     #[command(subcommand)]
     cmd: Commands,
