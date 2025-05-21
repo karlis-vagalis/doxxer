@@ -26,13 +26,37 @@ pub struct Settings {
 }
 impl Default for Settings {
     fn default() -> Self {
-        let config = Config::builder()
-            .add_source(config::File::with_name(".doxxer").required(false))
-            .add_source(config::File::with_name("doxxer").required(false))
-            .add_source(config::Environment::with_prefix("DOXXER"))
-            .build()
-            .unwrap();
+        let config = Settings::load_config(None);
+        Settings::apply_config(config)
+    }
+}
+impl From<&PathBuf> for Settings {
+    fn from(config_path: &PathBuf) -> Self {
+        let config = Settings::load_config(Some(config_path.clone()));
+        Settings::apply_config(config)
+    }
+}
+impl Settings {
+    fn load_config(config_path: Option<PathBuf>) -> Config {
+        let mut config = Config::builder();
 
+        match config_path {
+            Some(file) => {
+                config = config.add_source(config::File::with_name(
+                    std::path::absolute(file).unwrap().to_str().unwrap(),
+                ));
+            }
+            None => {
+                config = config
+                    .add_source(config::File::with_name(".doxxer").required(false))
+                    .add_source(config::File::with_name("doxxer").required(false));
+            }
+        }
+
+        config = config.add_source(config::Environment::with_prefix("DOXXER"));
+        config.build().expect("Failed to load config")
+    }
+    fn apply_config(config: Config) -> Self {
         let directory = match config.get_string("directory") {
             Ok(path) => PathBuf::from(path),
             Err(_) => PathBuf::from(default::DIRECTORY),
@@ -52,9 +76,7 @@ impl Default for Settings {
             output_prefix,
         }
     }
-}
-impl Settings {
-    pub fn apply(&mut self, args: &Cli) {
+    pub fn apply_cli(&mut self, args: &Cli) {
         if let Some(directory) = &args.directory {
             self.directory = directory.clone();
         };

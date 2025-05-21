@@ -18,7 +18,7 @@ struct Cli {
     #[clap(short, long, value_name="REPOSITORY", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
     directory: Option<PathBuf>,
 
-    #[clap(short, long, value_name="PATH", help="Path to the config file")]
+    #[clap(short, long, value_name = "PATH", help = "Path to the config file")]
     config: Option<PathBuf>,
 
     #[clap(flatten, next_help_heading = "Filter options")]
@@ -148,7 +148,7 @@ struct OutputOptions {
     #[clap(long, short='p', help=format!("Add prefix to the output version [default: {}]", default::OUTPUT_PREFIX))]
     output_prefix: Option<String>,
     #[clap(long, short='s', help=format!("Add suffix to the output version [default: {}]", default::OUTPUT_SUFFIX))]
-    output_suffix: Option<String>
+    output_suffix: Option<String>,
 }
 
 fn output_version(cmd: &Option<Field>, version: &Version, output_prefix: &str) {
@@ -175,10 +175,14 @@ fn get_styles() -> Styles {
 }
 
 fn main() {
-    let mut settings = Settings::default();
-    let args = Cli::parse();
+    let cli = Cli::parse();
 
-    settings.apply(&args);
+    let mut settings = match &cli.config {
+        Some(config_path) => Settings::from(config_path),
+        None => Settings::default(),
+    };
+
+    settings.apply_cli(&cli);
 
     let repo = match Repository::open(settings.directory) {
         Ok(repo) => repo,
@@ -188,7 +192,7 @@ fn main() {
         }
     };
 
-    match &args.cmd {
+    match &cli.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &settings.filter);
             output_version(field, &version, &settings.output_prefix)
