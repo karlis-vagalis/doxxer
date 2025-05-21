@@ -1,9 +1,9 @@
-use std::path::PathBuf;
 use regex::Regex;
+use std::path::PathBuf;
 
 use config::Config;
 
-use crate::{Cli, FilterOptions, OutputOptions};
+use crate::Cli;
 
 pub mod default {
     pub static DIRECTORY: &str = ".";
@@ -23,7 +23,7 @@ pub struct Settings {
     pub filter: Regex,
     pub output_prefix: String,
 }
-impl Default for Settings{
+impl Default for Settings {
     fn default() -> Self {
         let config = Config::builder()
             .add_source(config::File::with_name(".doxxer").required(false))
@@ -45,7 +45,11 @@ impl Default for Settings{
             Err(_) => default::OUTPUT_PREFIX.to_string(),
         };
 
-        Self { directory, filter, output_prefix }
+        Self {
+            directory,
+            filter,
+            output_prefix,
+        }
     }
 }
 impl Settings {

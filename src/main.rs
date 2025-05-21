@@ -170,7 +170,6 @@ fn get_styles() -> Styles {
 }
 
 fn main() {
-
     let mut settings = Settings::default();
     let args = Cli::parse();
 
