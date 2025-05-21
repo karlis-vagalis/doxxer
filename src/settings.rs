@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use regex::Regex;
 
 use config::Config;
 
@@ -6,7 +7,7 @@ use crate::{Cli, FilterOptions, OutputOptions};
 
 pub mod default {
     pub static DIRECTORY: &str = ".";
-    pub static FILTER_PREFIX: &str = "v";
+    pub static FILTER: &str = "^v";
     pub static OUTPUT_PREFIX: &str = "v";
     pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
     pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
@@ -19,7 +20,7 @@ pub mod default {
 #[derive(Debug)]
 pub struct Settings {
     pub directory: PathBuf,
-    pub filter_prefix: String,
+    pub filter: Regex,
     pub output_prefix: String,
 }
 impl Default for Settings{
@@ -35,16 +36,16 @@ impl Default for Settings{
             Ok(path) => PathBuf::from(path),
             Err(_) => PathBuf::from(default::DIRECTORY),
         };
-        let filter_prefix = match config.get_string("filter_prefix") {
-            Ok(prefix) => prefix,
-            Err(_) => default::FILTER_PREFIX.to_string(),
+        let filter = match config.get_string("filter") {
+            Ok(filter) => Regex::new(filter.as_str()).unwrap(),
+            Err(_) => Regex::new(default::FILTER).unwrap(),
         };
         let output_prefix = match config.get_string("output_prefix") {
             Ok(prefix) => prefix,
             Err(_) => default::OUTPUT_PREFIX.to_string(),
         };
 
-        Self { directory, filter_prefix, output_prefix }
+        Self { directory, filter, output_prefix }
     }
 }
 impl Settings {
@@ -52,8 +53,8 @@ impl Settings {
         if let Some(directory) = &args.directory {
             self.directory = directory.clone();
         };
-        if let Some(prefix) = &args.filter_options.filter_prefix {
-            self.filter_prefix = prefix.clone();
+        if let Some(filter) = &args.filter_options.filter {
+            self.filter = Regex::new(filter).unwrap();
         };
         if let Some(prefix) = &args.output_options.output_prefix {
             self.output_prefix = prefix.clone();

@@ -3,12 +3,16 @@ use semver::{BuildMetadata, Prerelease, Version};
 
 use crate::{PrereleaseOptions, Strategy};
 
+use regex::Regex;
+
+static SEMVER_REGEX: &str = r"(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?";
+
 fn find_tag_name_matching_version(
     repo: &Repository,
     version_string: &str,
-    tag_prefix: &str,
+    filter: &Regex,
 ) -> Result<Option<String>, Error> {
-    let search_term = format!("{}{}", tag_prefix, version_string);
+    let search_term = format!("{}{}", filter, version_string);
     let mut matching_tag_name: Option<String> = None;
     for tag_name_result in repo.tag_names(None)?.iter() {
         if let Some(tag_name) = tag_name_result {
@@ -45,20 +49,19 @@ fn get_short_head_hash(repo: &Repository) -> Result<String, Error> {
     Ok(id.to_string()[..7].to_string())
 }
 
-fn find_latest_semver(repo: &Repository, prefix: &str) -> Result<Option<Version>, Error> {
+fn find_latest_semver(repo: &Repository, filter: &Regex) -> Result<Option<Version>, Error> {
     let mut versions: Vec<Version> = Vec::new();
+    let re = Regex::new(SEMVER_REGEX).unwrap();
     let _ = repo.tag_foreach(|_id, name_bytes| {
         if let Ok(name) = String::from_utf8(name_bytes.to_vec()) {
             if let Some(tag_name) = name.strip_prefix("refs/tags/") {
-                let tag_name = {
-                    if tag_name.starts_with(prefix) {
-                        tag_name.trim_start_matches(prefix)
-                    } else {
-                        tag_name
+                if filter.is_match(tag_name) {
+                    if let Some(captures) = re.find(tag_name) {
+                        let matched_str = captures.as_str();
+                        if let Ok(version) = Version::parse(matched_str) {
+                            versions.push(version);
+                        }
                     }
-                };
-                if let Ok(version) = Version::parse(tag_name) {
-                    versions.push(version);
                 }
             }
         }
@@ -110,14 +113,13 @@ fn get_inc(pre: &str, identifier: &str) -> usize {
     }
 }
 
-pub fn next_version(repo: &Repository, tag_prefix: &str, strategy: &Strategy) -> Version {
-    let latest = current_version(repo, tag_prefix);
+pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> Version {
+    let latest = current_version(repo, filter);
 
-    let latest_tag_name =
-        match find_tag_name_matching_version(repo, &latest.to_string(), tag_prefix) {
-            Ok(tag) => tag,
-            Err(_) => None,
-        };
+    let latest_tag_name = match find_tag_name_matching_version(repo, &latest.to_string(), filter) {
+        Ok(tag) => tag,
+        Err(_) => None,
+    };
     let commit_count = match get_commit_count_since_tag(repo, latest_tag_name.as_deref()) {
         Ok(count) => count,
         Err(_) => 0,
@@ -208,8 +210,8 @@ fn handle_build_metadata(
     BuildMetadata::new(variables.inject(&options.build_template).as_str()).unwrap()
 }
 
-pub fn current_version(repo: &Repository, tag_prefix: &str) -> Version {
-    match find_latest_semver(repo, tag_prefix) {
+pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
+    match find_latest_semver(repo, filter) {
         Ok(Some(v)) => v,
         _ => Version::new(0, 0, 0),
     }

@@ -134,8 +134,8 @@ struct BumpingOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct FilterOptions {
-    #[clap(short, long, help=format!("Prefix of the tags used for current version detection [default: {}]", default::FILTER_PREFIX))]
-    filter_prefix: Option<String>,
+    #[clap(short, long, help=format!("Prefix of the tags used for current version detection [default: {}]", default::FILTER))]
+    filter: Option<String>,
 }
 
 /// Output options
@@ -186,7 +186,7 @@ fn main() {
 
     match &args.cmd {
         Commands::Current { field } => {
-            let version = current_version(&repo, &settings.filter_prefix);
+            let version = current_version(&repo, &settings.filter);
             output_version(field, &version, &settings.output_prefix)
         }
         Commands::Next { field, strategy } => {
@@ -200,7 +200,7 @@ fn main() {
                     },
                 },
             };
-            let version = next_version(&repo, &settings.filter_prefix, strategy);
+            let version = next_version(&repo, &settings.filter, strategy);
             output_version(field, &version, &settings.output_prefix)
         }
     }
