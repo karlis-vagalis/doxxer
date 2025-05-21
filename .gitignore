@@ -1,3 +1,4 @@
 /target
 /docs/*.tape
 **/*.tar.gz
+doxxer.*

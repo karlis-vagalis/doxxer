@@ -1,4 +1,5 @@
 mod git;
+mod settings;
 
 use clap::builder::styling::{Effects, RgbColor, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -6,6 +7,7 @@ use semver::Version;
 use std::path::PathBuf;
 
 use git::{current_version, next_version};
+use settings::{apply_config, default, get_config};
 
 use git2::Repository;
 
@@ -35,7 +37,7 @@ enum Commands {
         #[clap(short, long)]
         field: Option<Field>,
     },
-    #[clap(about=format!("Get next version\nIf no strategy is provided, falls back to dynamic version template \"{DEFAULT_DEV_TEMPLATE}\" with \"identifier={DEFAULT_DEV_IDENTIFIER}\""))]
+    #[clap(about=format!("Get next version\nIf no strategy is provided, falls back to dynamic version template \"{}\" with \"identifier={}\"", default::DEV_TEMPLATE, default::DEV_IDENTIFIER))]
     Next {
         #[clap(subcommand)]
         strategy: Option<Strategy>,
@@ -108,31 +110,25 @@ enum Strategy {
     },
 }
 
-static DEFAULT_PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
-static DEFAULT_DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
-static DEFAULT_BUILD_TEMPLATE: &str = "{hash}";
-static DEFAULT_PRERELEASE_IDENTIFIER: &str = "build";
-static DEFAULT_DEV_IDENTIFIER: &str = "dev";
-
 #[derive(Args, Debug)]
 struct PrereleaseOptions {
     /// Prerelease identifier (e.g., alpha, beta, build, ...)
-    #[clap(default_value = DEFAULT_PRERELEASE_IDENTIFIER)]
+    #[clap(default_value = default::PRERELEASE_IDENTIFIER)]
     identifier: String,
 
     /// Template for next version's pre-release
-    #[clap(short, long, default_value = DEFAULT_PRERELEASE_TEMPLATE)]
+    #[clap(short, long, default_value = default::PRERELEASE_TEMPLATE)]
     prerelease_template: String,
 
     /// Template for next version's build metadata
-    #[clap(short, long, default_value = DEFAULT_BUILD_TEMPLATE)]
+    #[clap(short, long, default_value = default::BUILD_TEMPLATE)]
     build_template: String,
 }
 
 #[derive(Args, Debug)]
 struct BumpingOptions {
     /// Bump increment
-    #[clap(short, long, default_value_t = 1)]
+    #[clap(short, long, default_value_t = default::INCREMENT)]
     increment: u64,
 }
 
@@ -140,7 +136,7 @@ struct BumpingOptions {
 #[group(required = false, multiple = false)]
 struct FilterOptions {
     /// Prefix of the tags used for current version detection
-    #[clap(short, long, default_value = "v")]
+    #[clap(short, long, default_value = default::FILTER_PREFIX)]
     filter_prefix: String,
 }
 
@@ -149,7 +145,7 @@ struct FilterOptions {
 #[group(required = false, multiple = false)]
 struct OutputOptions {
     /// Add prefix to the output version
-    #[clap(long, short, default_value = "v")]
+    #[clap(long, short, default_value = default::OUTPUT_PREFIX)]
     output_prefix: String,
 }
 
@@ -177,7 +173,9 @@ fn get_styles() -> Styles {
 }
 
 fn main() {
-    let args = Cli::parse();
+
+    let settings = get_config();
+    let args = apply_config(Cli::parse(), settings);
 
     let repo = match Repository::open(&args.directory) {
         Ok(repo) => repo,
@@ -197,9 +195,9 @@ fn main() {
                 Some(s) => s,
                 None => &Strategy::Prerelease {
                     prerelease_options: PrereleaseOptions {
-                        prerelease_template: String::from(DEFAULT_DEV_TEMPLATE),
-                        build_template: String::from(DEFAULT_BUILD_TEMPLATE),
-                        identifier: String::from(DEFAULT_DEV_IDENTIFIER),
+                        prerelease_template: String::from(default::DEV_TEMPLATE),
+                        build_template: String::from(default::BUILD_TEMPLATE),
+                        identifier: String::from(default::DEV_IDENTIFIER),
                     },
                 },
             };
