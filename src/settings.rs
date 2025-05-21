@@ -25,17 +25,70 @@ pub fn get_config() -> Config {
 }
 
 pub fn apply_config(mut args: Cli, settings: Config) -> Cli {
-
     dbg!(&settings);
-    
+
     if let Ok(s) = settings.get_string("directory") {
         args.directory = PathBuf::from(s)
     }
     if let Ok(s) = settings.get_string("filter_prefix") {
-        args.filter_options = FilterOptions {filter_prefix: s}
+        args.filter_options = FilterOptions { filter_prefix: s }
     }
     if let Ok(s) = settings.get_string("output_prefix") {
-        args.version_output_options = OutputOptions {output_prefix: s}
+        args.version_output_options = OutputOptions { output_prefix: s }
+    }
+
+    match &mut args.cmd {
+        crate::Commands::Current { field: _ } => {}
+        crate::Commands::Next { strategy, field: _ } => {
+            match strategy {
+                Some(s) => {
+                    let i = settings.get_int("increment").and_then(|v| Ok(v as u64));
+                    match s {
+                        crate::Strategy::Major { bump_options } => {
+                            if let Ok(i) = i {
+                                bump_options.increment = i
+                            }
+                        }
+                        crate::Strategy::Minor { bump_options } =>  {
+                            if let Ok(i) = i {
+                                bump_options.increment = i
+                            }
+                        },
+                        crate::Strategy::Patch { bump_options } =>  {
+                            if let Ok(i) = i {
+                                bump_options.increment = i
+                            }
+                        },
+                        crate::Strategy::Prerelease { prerelease_options } => todo!(),
+                        crate::Strategy::PreMajor {
+                            prerelease_options,
+                            bump_options,
+                        } =>  {
+                            if let Ok(i) = i {
+                                bump_options.increment = i
+                            }
+                        },
+                        crate::Strategy::PreMinor {
+                            prerelease_options,
+                            bump_options,
+                        } =>  {
+                            if let Ok(i) = i {
+                                bump_options.increment = i
+                            }
+                        },
+                        crate::Strategy::PrePatch {
+                            prerelease_options,
+                            bump_options,
+                        } =>  {
+                            if let Ok(i) = i {
+                                bump_options.increment = i
+                            }
+                        },
+                    }
+                }
+                None => {},
+            };
+        }
     }
 
     args
