@@ -4,7 +4,41 @@ use config::Config;
 
 use crate::{Cli, FilterOptions, OutputOptions};
 
+pub struct Settings {
+    pub directory: PathBuf,
+    pub filter_prefix: String,
+}
+impl Default for Settings{
+    fn default() -> Self {
+        let config = Config::builder()
+            .add_source(config::File::with_name(".doxxer").required(false))
+            .add_source(config::File::with_name("doxxer").required(false))
+            .add_source(config::Environment::with_prefix("DOXXER"))
+            .build()
+            .unwrap();
+
+        let directory = match config.get_string("directory") {
+            Ok(path) => PathBuf::from(path),
+            Err(_) => PathBuf::from(default::DIRECTORY),
+        };
+        let filter_prefix = match config.get_string("filter_prefix") {
+            Ok(prefix) => prefix,
+            Err(_) => default::FILTER_PREFIX.to_string(),
+        };
+
+        Self { directory, filter_prefix }
+    }
+}
+impl Settings {
+    pub fn apply(&mut self, args: &Cli) {
+        if let Some(directory) = &args.directory {
+            self.directory = directory.clone();
+        };
+    }
+}
+
 pub mod default {
+    pub static DIRECTORY: &str = ".";
     pub static FILTER_PREFIX: &str = "v";
     pub static OUTPUT_PREFIX: &str = "v";
     pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
@@ -27,9 +61,6 @@ pub fn get_config() -> Config {
 pub fn apply_config(mut args: Cli, settings: Config) -> Cli {
     dbg!(&settings);
 
-    if let Ok(s) = settings.get_string("directory") {
-        args.directory = PathBuf::from(s)
-    }
     if let Ok(s) = settings.get_string("filter_prefix") {
         args.filter_options = FilterOptions { filter_prefix: s }
     }

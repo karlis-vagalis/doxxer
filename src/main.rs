@@ -7,7 +7,7 @@ use semver::Version;
 use std::path::PathBuf;
 
 use git::{current_version, next_version};
-use settings::{apply_config, default, get_config};
+use settings::{apply_config, default, get_config, Settings};
 
 use git2::Repository;
 
@@ -16,8 +16,8 @@ use git2::Repository;
 #[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
 struct Cli {
     /// Path to the Git repository
-    #[clap(short, long, default_value = ".")]
-    directory: PathBuf,
+    #[clap(short, long)]
+    directory: Option<PathBuf>,
 
     #[clap(flatten, next_help_heading = "Filter options")]
     filter_options: FilterOptions,
@@ -174,10 +174,12 @@ fn get_styles() -> Styles {
 
 fn main() {
 
-    let settings = get_config();
-    let args = apply_config(Cli::parse(), settings);
+    let mut settings = Settings::default();
+    let args = Cli::parse();
 
-    let repo = match Repository::open(&args.directory) {
+    settings.apply(&args);
+
+    let repo = match Repository::open(settings.directory) {
         Ok(repo) => repo,
         Err(e) => {
             eprintln!("Issue opening repository: {}!", e.message());
@@ -187,7 +189,7 @@ fn main() {
 
     match &args.cmd {
         Commands::Current { field } => {
-            let version = current_version(&repo, &args.filter_options.filter_prefix);
+            let version = current_version(&repo, &settings.filter_prefix);
             output_version(field, &version, &args.version_output_options.output_prefix)
         }
         Commands::Next { field, strategy } => {
@@ -201,7 +203,7 @@ fn main() {
                     },
                 },
             };
-            let version = next_version(&repo, &args.filter_options.filter_prefix, strategy);
+            let version = next_version(&repo, &settings.filter_prefix, strategy);
             output_version(field, &version, &args.version_output_options.output_prefix)
         }
     }
