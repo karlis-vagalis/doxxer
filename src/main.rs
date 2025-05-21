@@ -181,8 +181,7 @@ fn main() {
         Some(config_path) => Settings::from(config_path),
         None => Settings::default(),
     };
-
-    settings.apply_cli(&cli);
+    settings.apply(&cli);
 
     let repo = match Repository::open(settings.directory) {
         Ok(repo) => repo,

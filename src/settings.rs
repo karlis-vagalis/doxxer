@@ -24,16 +24,38 @@ pub struct Settings {
     pub filter: Regex,
     pub output_prefix: String,
 }
+impl From<Config> for Settings {
+    fn from(config: Config) -> Self {
+        let directory = match config.get_string("directory") {
+            Ok(path) => PathBuf::from(path),
+            Err(_) => PathBuf::from(default::DIRECTORY),
+        };
+        let filter = match config.get_string("filter") {
+            Ok(filter) => Regex::new(filter.as_str()).unwrap(),
+            Err(_) => Regex::new(default::FILTER).unwrap(),
+        };
+        let output_prefix = match config.get_string("output_prefix") {
+            Ok(prefix) => prefix,
+            Err(_) => default::OUTPUT_PREFIX.to_string(),
+        };
+
+        Self {
+            directory,
+            filter,
+            output_prefix,
+        }
+    }
+}
 impl Default for Settings {
     fn default() -> Self {
         let config = Settings::load_config(None);
-        Settings::apply_config(config)
+        Settings::from(config)
     }
 }
 impl From<&PathBuf> for Settings {
     fn from(config_path: &PathBuf) -> Self {
         let config = Settings::load_config(Some(config_path));
-        Settings::apply_config(config)
+        Settings::from(config)
     }
 }
 impl Settings {
@@ -56,27 +78,7 @@ impl Settings {
         config = config.add_source(config::Environment::with_prefix("DOXXER"));
         config.build().expect("Failed to load config")
     }
-    fn apply_config(config: Config) -> Self {
-        let directory = match config.get_string("directory") {
-            Ok(path) => PathBuf::from(path),
-            Err(_) => PathBuf::from(default::DIRECTORY),
-        };
-        let filter = match config.get_string("filter") {
-            Ok(filter) => Regex::new(filter.as_str()).unwrap(),
-            Err(_) => Regex::new(default::FILTER).unwrap(),
-        };
-        let output_prefix = match config.get_string("output_prefix") {
-            Ok(prefix) => prefix,
-            Err(_) => default::OUTPUT_PREFIX.to_string(),
-        };
-
-        Self {
-            directory,
-            filter,
-            output_prefix,
-        }
-    }
-    pub fn apply_cli(&mut self, args: &Cli) {
+    pub fn apply(&mut self, args: &Cli) {
         if let Some(directory) = &args.directory {
             self.directory = directory.clone();
         };
