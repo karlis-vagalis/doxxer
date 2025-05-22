@@ -16,6 +16,8 @@ pub mod default {
     pub static PRERELEASE_IDENTIFIER: &str = "build";
     pub static DEV_IDENTIFIER: &str = "dev";
     pub static INCREMENT: u64 = 1;
+    pub static CONFIG_FILE_NAME: &str = "doxxer";
+    pub static HIDDEN_CONFIG_FILE_NAME: &str = ".doxxer";
 }
 
 #[derive(Debug)]
@@ -60,19 +62,30 @@ impl From<&PathBuf> for Settings {
 }
 impl Settings {
     fn load_config(config_path: Option<&PathBuf>) -> Config {
-        let mut config = Config::builder();
+
+        let mut config = Config::builder()
+            .add_source(
+                config::File::with_name(default::HIDDEN_CONFIG_FILE_NAME)
+                    .required(false),
+            )
+            .add_source(config::File::with_name(default::CONFIG_FILE_NAME).required(false));
 
         match config_path {
-            Some(file) => {
-                config = config.add_source(config::File::with_name(
-                    std::path::absolute(file).unwrap().to_str().unwrap(),
-                ));
+            Some(path) => {
+                if path.is_dir() {
+                    config = config.add_source(
+                        config::File::with_name(path.join(default::HIDDEN_CONFIG_FILE_NAME).as_os_str().to_str().unwrap())
+                            .required(false),
+                    )
+                    .add_source(config::File::with_name(path.join(default::CONFIG_FILE_NAME).as_os_str().to_str().unwrap()).required(false));
+                } else {
+                    config = config.add_source(config::File::with_name(
+                        std::path::absolute(path).unwrap().to_str().unwrap(),
+                    ));
+                }
+                
             }
-            None => {
-                config = config
-                    .add_source(config::File::with_name(".doxxer").required(false))
-                    .add_source(config::File::with_name("doxxer").required(false));
-            }
+            None => {},
         }
 
         config = config.add_source(config::Environment::with_prefix("DOXXER"));
