@@ -145,16 +145,14 @@ struct FilterOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct OutputOptions {
-    #[clap(long, short='p', help=format!("Add prefix to the output version [default: {}]", default::OUTPUT_PREFIX))]
-    output_prefix: Option<String>,
-    #[clap(long, short='s', help=format!("Add suffix to the output version [default: {}]", default::OUTPUT_SUFFIX))]
-    output_suffix: Option<String>,
+    #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
+    output_template: Option<String>,
 }
 
-fn output_version(cmd: &Option<Field>, version: &Version, output_prefix: &str) {
+fn output_version(cmd: &Option<Field>, version: &Version, output_template: &str) {
     match cmd {
         None => {
-            println!("{}{}", output_prefix, version);
+            println!("{}", output_template.replace("{version}", version.to_string().as_str()));
         }
         Some(part) => match part {
             Field::Major => println!("{}", version.major),
@@ -185,6 +183,7 @@ fn main() {
         },
     };
     settings.apply(&cli);
+    settings.validate();
 
     let repo = match Repository::open(settings.directory) {
         Ok(repo) => repo,
@@ -197,7 +196,7 @@ fn main() {
     match &cli.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &settings.filter);
-            output_version(field, &version, &settings.output_prefix)
+            output_version(field, &version, &settings.output_template)
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
@@ -211,7 +210,7 @@ fn main() {
                 },
             };
             let version = next_version(&repo, &settings.filter, strategy);
-            output_version(field, &version, &settings.output_prefix)
+            output_version(field, &version, &settings.output_template)
         }
     }
 }

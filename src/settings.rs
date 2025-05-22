@@ -8,8 +8,7 @@ use crate::Cli;
 pub mod default {
     pub static DIRECTORY: &str = ".";
     pub static FILTER: &str = "";
-    pub static OUTPUT_PREFIX: &str = "";
-    pub static OUTPUT_SUFFIX: &str = "";
+    pub static OUTPUT_TEMPLATE: &str = "{version}";
     pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
     pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
     pub static BUILD_TEMPLATE: &str = "{hash}";
@@ -23,7 +22,7 @@ pub mod default {
 pub struct Settings {
     pub directory: PathBuf,
     pub filter: Regex,
-    pub output_prefix: String,
+    pub output_template: String,
 }
 impl From<Config> for Settings {
     fn from(config: Config) -> Self {
@@ -35,15 +34,15 @@ impl From<Config> for Settings {
             Ok(filter) => Regex::new(filter.as_str()).unwrap(),
             Err(_) => Regex::new(default::FILTER).unwrap(),
         };
-        let output_prefix = match config.get_string("output_prefix") {
+        let output_template = match config.get_string("output_template") {
             Ok(prefix) => prefix,
-            Err(_) => default::OUTPUT_PREFIX.to_string(),
+            Err(_) => default::OUTPUT_TEMPLATE.to_string(),
         };
 
         Self {
             directory,
             filter,
-            output_prefix,
+            output_template,
         }
     }
 }
@@ -109,12 +108,19 @@ impl Settings {
         if let Some(filter) = &args.filter_options.filter {
             self.filter = Regex::new(filter).unwrap();
         };
-        if let Some(prefix) = &args.output_options.output_prefix {
-            self.output_prefix = prefix.clone();
+        if let Some(template) = &args.output_options.output_template {
+            self.output_template = template.clone();
         };
         //dbg!(&self);
 
         // Convert path to the absolute path
         self.directory = std::path::absolute(&self.directory).unwrap();
+    }
+
+    pub fn validate(&self) {
+        if !self.output_template.contains("{version}") {
+            eprintln!("Output template \"{}\" is missing required variable {{version}}", self.output_template);
+            std::process::exit(1);
+        }
     }
 }
