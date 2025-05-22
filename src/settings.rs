@@ -7,8 +7,8 @@ use crate::Cli;
 
 pub mod default {
     pub static DIRECTORY: &str = ".";
-    pub static FILTER: &str = "^v";
-    pub static OUTPUT_PREFIX: &str = "v";
+    pub static FILTER: &str = "";
+    pub static OUTPUT_PREFIX: &str = "";
     pub static OUTPUT_SUFFIX: &str = "";
     pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
     pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
@@ -17,7 +17,6 @@ pub mod default {
     pub static DEV_IDENTIFIER: &str = "dev";
     pub static INCREMENT: u64 = 1;
     pub static CONFIG_FILE_NAME: &str = "doxxer";
-    pub static HIDDEN_CONFIG_FILE_NAME: &str = ".doxxer";
 }
 
 #[derive(Debug)]
@@ -61,31 +60,43 @@ impl From<&PathBuf> for Settings {
     }
 }
 impl Settings {
+    /// Discovers/loads configuration from specified path
     fn load_config(config_path: Option<&PathBuf>) -> Config {
+        let hidden_config_file_name = format!(".{}", default::CONFIG_FILE_NAME);
 
         let mut config = Config::builder()
-            .add_source(
-                config::File::with_name(default::HIDDEN_CONFIG_FILE_NAME)
-                    .required(false),
-            )
+            .add_source(config::File::with_name(&hidden_config_file_name).required(false))
             .add_source(config::File::with_name(default::CONFIG_FILE_NAME).required(false));
 
         match config_path {
             Some(path) => {
-                if path.is_dir() {
-                    config = config.add_source(
-                        config::File::with_name(path.join(default::HIDDEN_CONFIG_FILE_NAME).as_os_str().to_str().unwrap())
-                            .required(false),
-                    )
-                    .add_source(config::File::with_name(path.join(default::CONFIG_FILE_NAME).as_os_str().to_str().unwrap()).required(false));
-                } else {
+                if path.is_file() {
                     config = config.add_source(config::File::with_name(
                         std::path::absolute(path).unwrap().to_str().unwrap(),
                     ));
+                } else {
+                    config = config
+                        .add_source(
+                            config::File::with_name(
+                                path.join(&hidden_config_file_name)
+                                    .as_os_str()
+                                    .to_str()
+                                    .unwrap(),
+                            )
+                            .required(false),
+                        )
+                        .add_source(
+                            config::File::with_name(
+                                path.join(default::CONFIG_FILE_NAME)
+                                    .as_os_str()
+                                    .to_str()
+                                    .unwrap(),
+                            )
+                            .required(false),
+                        );
                 }
-                
             }
-            None => {},
+            None => {}
         }
 
         config = config.add_source(config::Environment::with_prefix("DOXXER"));

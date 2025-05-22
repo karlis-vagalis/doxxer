@@ -11,14 +11,14 @@ use settings::{default, Settings};
 
 use git2::Repository;
 
-/// Dynamic version manager for Git
+/// Dynamic version manager for Git repositories
 #[derive(Parser, Debug)]
 #[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
 struct Cli {
     #[clap(short, long, value_name="REPOSITORY", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
     directory: Option<PathBuf>,
 
-    #[clap(short, long, value_name = "PATH", help = "Path to the config file")]
+    #[clap(short, long, value_name = "PATH", help = "Path to the config file or directory")]
     config: Option<PathBuf>,
 
     #[clap(flatten, next_help_heading = "Filter options")]
@@ -137,7 +137,7 @@ struct BumpingOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct FilterOptions {
-    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression used for filtering tags [default: {}]", default::FILTER))]
+    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::FILTER))]
     filter: Option<String>,
 }
 
@@ -179,7 +179,10 @@ fn main() {
 
     let mut settings = match &cli.config {
         Some(config_path) => Settings::from(config_path),
-        None => Settings::default(),
+        None => match &cli.directory {
+            Some(dir) => Settings::from(dir),
+            None => Settings::default(),
+        },
     };
     settings.apply(&cli);
 
