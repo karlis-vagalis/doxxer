@@ -47,28 +47,15 @@ impl Settings {
     /// Discovers/loads configuration from specified path
     pub fn apply(&mut self, args: &Cli) {
         let command = match &args.cmd {
-            crate::Commands::Current { field: _ } => "current",
-            crate::Commands::Next { strategy, field: _ } => match strategy {
-                Some(strategy) => match strategy {
-                    Strategy::Major { bump_options: _ } => "next.major",
-                    Strategy::Minor { bump_options: _ } => "next.minor",
-                    Strategy::Patch { bump_options: _ } => "next.patch",
-                    Strategy::Prerelease {
-                        prerelease_options: _,
-                    } => "next.prerelease",
-                    Strategy::PreMajor {
-                        prerelease_options: _,
-                        bump_options: _,
-                    } => "next.pre-major",
-                    Strategy::PreMinor {
-                        prerelease_options: _,
-                        bump_options: _,
-                    } => "next.pre-minor",
-                    Strategy::PrePatch {
-                        prerelease_options: _,
-                        bump_options: _,
-                    } => "next.pre-patch",
-                },
+            crate::Commands::Current { .. } => "current",
+            crate::Commands::Next { strategy, .. } => match strategy {
+                Some(Strategy::Major { .. }) => "next.major",
+                Some(Strategy::Minor { .. }) => "next.minor",
+                Some(Strategy::Patch { .. }) => "next.patch",
+                Some(Strategy::Prerelease { .. }) => "next.prerelease",
+                Some(Strategy::PreMajor { .. }) => "next.pre-major",
+                Some(Strategy::PreMinor { .. }) => "next.pre-minor",
+                Some(Strategy::PrePatch { .. }) => "next.pre-patch",
                 None => "next",
             },
         };
