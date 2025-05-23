@@ -278,6 +278,7 @@ dependencies = [
  "once_cell",
  "regex",
  "semver",
+ "serde",
 ]
 
 [[package]]

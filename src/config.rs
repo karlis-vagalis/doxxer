@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use config::Config;
+use serde::Deserialize;
 
 use crate::settings::default;
 
@@ -53,7 +54,31 @@ impl Configuration {
         }
     }
 
-    pub fn find<T>(&self) -> Option<T> {
-        None
+    pub fn get<'de, T>(&self, subcommand: &str, key: &str) -> Result<T, config::ConfigError>
+    where
+        T: Deserialize<'de>,
+    {
+        let parts: Vec<&str> = subcommand.split('.').collect();
+
+        // Try from the most specific to the least specific subcommand prefix
+        for i in (0..=parts.len()).rev() {
+            if i > 0 {
+                let prefix_parts = &parts[0..i];
+                let prefix = prefix_parts.join(".");
+                let env_prefix = prefix_parts.join("_").to_uppercase();
+
+                let env_key = format!("{}_{}", env_prefix, key.to_uppercase());
+                if let Ok(value) = self.config.get::<T>(&env_key) {
+                    return Ok(value);
+                }
+
+                let section_key = format!("{}.{}", prefix, key);
+                if let Ok(value) = self.config.get::<T>(&section_key) {
+                    return Ok(value);
+                }
+            }
+        }
+        // Finally, try the global key
+        self.config.get(key)
     }
 }

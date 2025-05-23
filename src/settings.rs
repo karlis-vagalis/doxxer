@@ -1,9 +1,7 @@
 use regex::Regex;
 use std::path::PathBuf;
 
-use config::Config;
-
-use crate::{config::Configuration, Cli};
+use crate::{config::Configuration, Cli, Strategy};
 
 pub mod default {
     pub static DIRECTORY: &str = ".";
@@ -47,19 +45,57 @@ impl From<&PathBuf> for Settings {
 }
 impl Settings {
     /// Discovers/loads configuration from specified path
-
     pub fn apply(&mut self, args: &Cli) {
-        // Override with CLI options
+        let command = match &args.cmd {
+            crate::Commands::Current { field: _ } => "current",
+            crate::Commands::Next { strategy, field: _ } => match strategy {
+                Some(strategy) => match strategy {
+                    Strategy::Major { bump_options: _ } => "next.major",
+                    Strategy::Minor { bump_options: _ } => "next.minor",
+                    Strategy::Patch { bump_options: _ } => "next.patch",
+                    Strategy::Prerelease {
+                        prerelease_options: _,
+                    } => "next.prerelease",
+                    Strategy::PreMajor {
+                        prerelease_options: _,
+                        bump_options: _,
+                    } => "next.pre-major",
+                    Strategy::PreMinor {
+                        prerelease_options: _,
+                        bump_options: _,
+                    } => "next.pre-minor",
+                    Strategy::PrePatch {
+                        prerelease_options: _,
+                        bump_options: _,
+                    } => "next.pre-patch",
+                },
+                None => "next",
+            },
+        };
+
+        // Dir
+        if let Ok(dir) = self.config.get::<String>(command, "directory") {
+            self.directory = PathBuf::from(dir);
+        }
         if let Some(directory) = &args.directory {
             self.directory = directory.clone();
         };
+
+        // Filter
+        if let Ok(filter) = self.config.get::<String>(command, "filter") {
+            self.filter = Regex::new(&filter).unwrap();
+        }
         if let Some(filter) = &args.filter_options.filter {
             self.filter = Regex::new(filter).unwrap();
         };
+
+        // Output template
+        if let Ok(template) = self.config.get::<String>(command, "output_template") {
+            self.output_template = template
+        }
         if let Some(template) = &args.output_options.output_template {
             self.output_template = template.clone();
         };
-        //dbg!(&self);
 
         // Convert path to the absolute path
         self.directory = std::path::absolute(&self.directory).unwrap();
