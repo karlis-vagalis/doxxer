@@ -1,15 +1,15 @@
-use std::path::PathBuf;
-
+use crate::settings::default;
 use config::Config;
 use serde::Deserialize;
+use std::path::PathBuf;
 
-use crate::settings::default;
-
+/// Thin wrapper around config::Config to implement related utility methods
 #[derive(Debug)]
 pub struct Configuration {
     config: Config,
 }
 impl Configuration {
+    /// Loads config from directory/file. Uses default config locations if none is provided
     pub fn load(config_path: Option<&PathBuf>) -> Self {
         let hidden_config_file_name = format!(".{}", default::CONFIG_FILE_NAME);
 
@@ -54,6 +54,7 @@ impl Configuration {
         }
     }
 
+    /// Get value for configuration item dpending on subcommand. Returns error if not found in configuration
     pub fn get<'de, T>(&self, subcommand: &str, key: &str) -> Result<T, config::ConfigError>
     where
         T: Deserialize<'de>,

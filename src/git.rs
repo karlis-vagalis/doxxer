@@ -2,7 +2,7 @@ use git2::{Error, ObjectType, Repository};
 use once_cell::sync::Lazy;
 use semver::{BuildMetadata, Prerelease, Version};
 
-use crate::{PrereleaseOptions, Strategy};
+use crate::{template::TemplateVariables, PrereleaseOptions, Strategy};
 
 use regex::Regex;
 
@@ -185,7 +185,7 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> V
             let inc = get_inc(next.pre.as_str(), prerelease_options.identifier.as_str());
             let template_variables = TemplateVariables {
                 pre: next.pre.as_str().to_string(),
-                inc: inc,
+                inc,
                 hash: short_hash,
                 distance: commit_count,
                 identifier: prerelease_options.identifier.clone(),
@@ -216,44 +216,5 @@ pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
     match find_latest_semver(repo, filter) {
         Ok(Some(v)) => v,
         _ => Version::new(0, 0, 0),
-    }
-}
-
-#[derive(Debug)]
-struct TemplateVariables {
-    pre: String,
-    inc: usize,
-    identifier: String,
-    hash: String,
-    distance: usize,
-}
-impl TemplateVariables {
-    fn fields(&self) -> Vec<(&'static str, String)> {
-        vec![
-            ("{pre}", self.pre.clone()),
-            ("{inc}", self.inc.to_string()),
-            ("{identifier}", self.identifier.clone()),
-            ("{hash}", self.hash.clone()),
-            ("{distance}", self.distance.to_string()),
-        ]
-    }
-
-    fn inject(&self, template: &str) -> String {
-        let mut template = String::from(template);
-        for (field, value) in self.fields() {
-            //dbg!(&field, &value);
-            template = template.replace(field, value.as_str());
-            template = match template.strip_prefix(".") {
-                Some(s) => s.to_string(),
-                None => template,
-            };
-            template = match template.strip_suffix(".") {
-                Some(s) => s.to_string(),
-                None => template,
-            };
-        }
-
-        //dbg!(&template);
-        template
     }
 }
