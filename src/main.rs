@@ -1,5 +1,6 @@
 mod git;
 mod settings;
+pub mod config;
 
 use clap::builder::styling::{Effects, RgbColor, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};

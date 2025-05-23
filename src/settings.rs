@@ -1,9 +1,9 @@
 use regex::Regex;
 use std::path::PathBuf;
 
-use config::Config;
+use config::{Config};
 
-use crate::Cli;
+use crate::{config::Configuration, Cli};
 
 pub mod default {
     pub static DIRECTORY: &str = ".";
@@ -20,88 +20,36 @@ pub mod default {
 
 #[derive(Debug)]
 pub struct Settings {
+    config: Configuration,
     pub directory: PathBuf,
     pub filter: Regex,
     pub output_template: String,
 }
-impl From<Config> for Settings {
-    fn from(config: Config) -> Self {
-        let directory = match config.get_string("directory") {
-            Ok(path) => PathBuf::from(path),
-            Err(_) => PathBuf::from(default::DIRECTORY),
-        };
-        let filter = match config.get_string("filter") {
-            Ok(filter) => Regex::new(filter.as_str()).unwrap(),
-            Err(_) => Regex::new(default::FILTER).unwrap(),
-        };
-        let output_template = match config.get_string("output_template") {
-            Ok(prefix) => prefix,
-            Err(_) => default::OUTPUT_TEMPLATE.to_string(),
-        };
-
-        Self {
-            directory,
-            filter,
-            output_template,
-        }
-    }
-}
 impl Default for Settings {
     fn default() -> Self {
-        let config = Settings::load_config(None);
-        Settings::from(config)
+        Self {
+            directory: PathBuf::from(default::DIRECTORY),
+            filter: Regex::new(default::FILTER).unwrap(),
+            output_template: default::OUTPUT_TEMPLATE.to_string(),
+            config: Configuration::load(None),
+        }
     }
 }
 impl From<&PathBuf> for Settings {
     fn from(config_path: &PathBuf) -> Self {
-        let config = Settings::load_config(Some(config_path));
-        Settings::from(config)
+        Self {
+            directory: PathBuf::from(default::DIRECTORY),
+            filter: Regex::new(default::FILTER).unwrap(),
+            output_template: default::OUTPUT_TEMPLATE.to_string(),
+            config: Configuration::load(Some(config_path)),
+        }
     }
 }
 impl Settings {
     /// Discovers/loads configuration from specified path
-    fn load_config(config_path: Option<&PathBuf>) -> Config {
-        let hidden_config_file_name = format!(".{}", default::CONFIG_FILE_NAME);
-
-        let mut config = Config::builder()
-            .add_source(config::File::with_name(&hidden_config_file_name).required(false))
-            .add_source(config::File::with_name(default::CONFIG_FILE_NAME).required(false));
-
-        match config_path {
-            Some(path) => {
-                if path.is_file() {
-                    config = config.add_source(config::File::with_name(
-                        std::path::absolute(path).unwrap().to_str().unwrap(),
-                    ));
-                } else {
-                    config = config
-                        .add_source(
-                            config::File::with_name(
-                                path.join(&hidden_config_file_name)
-                                    .as_os_str()
-                                    .to_str()
-                                    .unwrap(),
-                            )
-                            .required(false),
-                        )
-                        .add_source(
-                            config::File::with_name(
-                                path.join(default::CONFIG_FILE_NAME)
-                                    .as_os_str()
-                                    .to_str()
-                                    .unwrap(),
-                            )
-                            .required(false),
-                        );
-                }
-            }
-            None => {}
-        }
-
-        config = config.add_source(config::Environment::with_prefix("DOXXER"));
-        config.build().expect("Failed to load config")
-    }
+    
     pub fn apply(&mut self, args: &Cli) {
+        // Override with CLI options
         if let Some(directory) = &args.directory {
             self.directory = directory.clone();
         };
@@ -119,7 +67,10 @@ impl Settings {
 
     pub fn validate(&self) {
         if !self.output_template.contains("{version}") {
-            eprintln!("Output template \"{}\" is missing required variable {{version}}", self.output_template);
+            eprintln!(
+                "Output template \"{}\" is missing required variable {{version}}",
+                self.output_template
+            );
             std::process::exit(1);
         }
     }
