@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::path::PathBuf;
 
-use config::{Config};
+use config::Config;
 
 use crate::{config::Configuration, Cli};
 
@@ -47,7 +47,7 @@ impl From<&PathBuf> for Settings {
 }
 impl Settings {
     /// Discovers/loads configuration from specified path
-    
+
     pub fn apply(&mut self, args: &Cli) {
         // Override with CLI options
         if let Some(directory) = &args.directory {

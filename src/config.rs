@@ -52,4 +52,8 @@ impl Configuration {
             config: config.build().expect("Failed to load config"),
         }
     }
+
+    pub fn find<T>(&self) -> Option<T> {
+        None
+    }
 }

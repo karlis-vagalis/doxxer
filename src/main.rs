@@ -1,6 +1,6 @@
+pub mod config;
 mod git;
 mod settings;
-pub mod config;
 
 use clap::builder::styling::{Effects, RgbColor, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -19,7 +19,12 @@ struct Cli {
     #[clap(short, long, value_name="REPOSITORY", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
     directory: Option<PathBuf>,
 
-    #[clap(short, long, value_name = "PATH", help = "Path to the config file or directory")]
+    #[clap(
+        short,
+        long,
+        value_name = "PATH",
+        help = "Path to the config file or directory"
+    )]
     config: Option<PathBuf>,
 
     #[clap(flatten, next_help_heading = "Filter options")]
@@ -153,7 +158,10 @@ struct OutputOptions {
 fn output_version(cmd: &Option<Field>, version: &Version, output_template: &str) {
     match cmd {
         None => {
-            println!("{}", output_template.replace("{version}", version.to_string().as_str()));
+            println!(
+                "{}",
+                output_template.replace("{version}", version.to_string().as_str())
+            );
         }
         Some(part) => match part {
             Field::Major => println!("{}", version.major),
