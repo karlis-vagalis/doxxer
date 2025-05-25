@@ -5,7 +5,7 @@ use crate::{config::Configuration, Cli, Strategy};
 
 pub mod default {
     pub static DIRECTORY: &str = ".";
-    pub static FILTER: &str = "";
+    pub static TAG_FILTER: &str = "";
     pub static OUTPUT_TEMPLATE: &str = "{version}";
     pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
     pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
@@ -20,14 +20,14 @@ pub mod default {
 pub struct Settings {
     config: Configuration,
     pub directory: PathBuf,
-    pub filter: Regex,
+    pub tag_filter: Regex,
     pub output_template: String,
 }
 impl Default for Settings {
     fn default() -> Self {
         Self {
             directory: PathBuf::from(default::DIRECTORY),
-            filter: Regex::new(default::FILTER).unwrap(),
+            tag_filter: Regex::new(default::TAG_FILTER).unwrap(),
             output_template: default::OUTPUT_TEMPLATE.to_string(),
             config: Configuration::load(None),
         }
@@ -37,7 +37,7 @@ impl From<&PathBuf> for Settings {
     fn from(config_path: &PathBuf) -> Self {
         Self {
             directory: PathBuf::from(default::DIRECTORY),
-            filter: Regex::new(default::FILTER).unwrap(),
+            tag_filter: Regex::new(default::TAG_FILTER).unwrap(),
             output_template: default::OUTPUT_TEMPLATE.to_string(),
             config: Configuration::load(Some(config_path)),
         }
@@ -69,11 +69,11 @@ impl Settings {
         };
 
         // Filter
-        if let Ok(filter) = self.config.get::<String>(command, "filter") {
-            self.filter = Regex::new(&filter).unwrap();
+        if let Ok(filter) = self.config.get::<String>(command, "tag_filter") {
+            self.tag_filter = Regex::new(&filter).unwrap();
         }
-        if let Some(filter) = &args.filter_options.filter {
-            self.filter = Regex::new(filter).unwrap();
+        if let Some(filter) = &args.filter_options.tag_filter {
+            self.tag_filter = Regex::new(filter).unwrap();
         };
 
         // Output template

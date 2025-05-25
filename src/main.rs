@@ -144,8 +144,8 @@ struct BumpingOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 struct FilterOptions {
-    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::FILTER))]
-    filter: Option<String>,
+    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
+    tag_filter: Option<String>,
 }
 
 /// Output options
@@ -207,7 +207,7 @@ fn main() {
 
     match &cli.cmd {
         Commands::Current { field } => {
-            let version = current_version(&repo, &settings.filter);
+            let version = current_version(&repo, &settings.tag_filter);
             output_version(field, &version, &settings.output_template)
         }
         Commands::Next { field, strategy } => {
@@ -221,7 +221,7 @@ fn main() {
                     },
                 },
             };
-            let version = next_version(&repo, &settings.filter, strategy);
+            let version = next_version(&repo, &settings.tag_filter, strategy);
             output_version(field, &version, &settings.output_template)
         }
     }
