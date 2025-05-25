@@ -165,6 +165,7 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> V
         Strategy::Prerelease {
             prerelease_options: _,
         } => {}
+        Strategy::Dev { prerelease_options: _ } => {},
     }
 
     // Set new prerelease and metadata

@@ -118,6 +118,10 @@ enum Strategy {
         #[clap(flatten)]
         bump_options: BumpingOptions,
     },
+    Dev {
+        #[clap(flatten)]
+        prerelease_options: PrereleaseOptions,
+    }
 }
 
 #[derive(Args, Debug)]

@@ -60,6 +60,7 @@ impl Settings {
                 Some(Strategy::PreMajor { .. }) => "next.pre-major",
                 Some(Strategy::PreMinor { .. }) => "next.pre-minor",
                 Some(Strategy::PrePatch { .. }) => "next.pre-patch",
+                Some(Strategy::Dev { .. }) => "next.dev",
                 None => "next",
             },
         };
