@@ -2,174 +2,19 @@ mod config;
 mod git;
 mod settings;
 mod template;
+mod cli;
 
-use clap::builder::styling::{Effects, RgbColor, Styles};
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::Parser;
 use semver::Version;
 use serde_json::{json, Value};
-use std::path::PathBuf;
 
 use git::{current_version, next_version};
 use settings::{default, Settings};
+use cli::{Cli, Commands, Field, Format, PrereleaseOptions, Strategy};
 
 use git2::Repository;
 
-/// Dynamic version manager for Git repositories
-#[derive(Parser, Debug)]
-#[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
-struct Cli {
-    #[clap(short, long, value_name="REPOSITORY", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
-    directory: Option<PathBuf>,
 
-    #[clap(
-        short,
-        long,
-        value_name = "PATH",
-        help = "Path to the config file or directory"
-    )]
-    config: Option<PathBuf>,
-
-    #[clap(flatten, next_help_heading = "Filter options")]
-    filter_options: FilterOptions,
-
-    #[clap(flatten, next_help_heading = "Output options")]
-    output_options: OutputOptions,
-
-    #[command(subcommand)]
-    cmd: Commands,
-}
-
-#[derive(Subcommand, Debug)]
-enum Commands {
-    /// Get current version
-    Current {
-        /// Field/part of the version
-        #[clap(short, long)]
-        field: Option<Field>,
-    },
-    #[clap(about=format!("Get next version\nIf no strategy is provided, falls back to dynamic version template \"{}\" with \"identifier={}\"", default::DEV_TEMPLATE, default::DEV_IDENTIFIER))]
-    Next {
-        #[clap(subcommand)]
-        strategy: Option<Strategy>,
-
-        /// Field/part of the version
-        #[clap(short, long)]
-        field: Option<Field>,
-    },
-}
-
-#[derive(ValueEnum, Clone, Debug)]
-enum Field {
-    Major,
-    Minor,
-    Patch,
-    Pre,
-    Build,
-}
-
-/// Bumping strategy
-#[derive(Subcommand, Debug)]
-#[clap(
-    subcommand_help_heading = "Bumping strategy",
-    subcommand_value_name = "STRATEGY"
-)]
-enum Strategy {
-    /// Major version
-    Major {
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-    },
-    /// Minor version
-    Minor {
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-    },
-    /// Patch version
-    Patch {
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-    },
-    /// Pre-release version
-    Prerelease {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-    },
-    /// Major + pre-release version
-    PreMajor {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-    },
-    /// Minor + pre-release version
-    PreMinor {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-    },
-    /// Patch + pre-release version
-    PrePatch {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-    },
-    Dev {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-    }
-}
-
-#[derive(Args, Debug)]
-struct PrereleaseOptions {
-    /// Prerelease identifier (e.g., alpha, beta, build, ...)
-    #[clap(default_value = default::PRERELEASE_IDENTIFIER)]
-    identifier: String,
-
-    /// Template for next version's pre-release
-    #[clap(short, long, default_value = default::PRERELEASE_TEMPLATE)]
-    prerelease_template: String,
-
-    /// Template for next version's build metadata
-    #[clap(short, long, default_value = default::BUILD_TEMPLATE)]
-    build_template: String,
-}
-
-#[derive(Args, Debug)]
-struct BumpingOptions {
-    /// Bump increment
-    #[clap(short, long, default_value_t = default::INCREMENT)]
-    increment: u64,
-}
-
-#[derive(Debug, Args)]
-#[group(required = false, multiple = false)]
-struct FilterOptions {
-    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
-    tag_filter: Option<String>,
-}
-
-/// Output options
-#[derive(Debug, Args)]
-#[group(required = false, multiple = false)]
-struct OutputOptions {
-    #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
-    output_template: Option<String>,
-    #[clap(short, long, help = "Template for build metadata [default: ]")]
-    metadata_template: Option<String>,
-    #[clap(short, long, help = "Output format [default: plain]")]
-    format: Option<Format>,
-}
-
-#[derive(Debug, Clone, ValueEnum)]
-enum Format {
-    Plain,
-    Json,
-}
 
 fn output_version(field: &Option<Field>, version: &Version, output_template: &str, format: &Format) {
     match format {
@@ -217,13 +62,7 @@ fn output_version(field: &Option<Field>, version: &Version, output_template: &st
     }
 }
 
-fn get_styles() -> Styles {
-    Styles::styled()
-        .header(RgbColor::from((246, 193, 119)).on_default() | Effects::BOLD)
-        .usage(RgbColor::from((196, 167, 231)).on_default() | Effects::BOLD)
-        .literal(RgbColor::from((235, 188, 186)).on_default() | Effects::BOLD)
-        .placeholder(RgbColor::from((196, 167, 231)).on_default())
-}
+
 
 fn main() {
     let cli = Cli::parse();
