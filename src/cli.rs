@@ -12,9 +12,9 @@ use crate::settings::default;
 
 /// Dynamic version manager for Git repositories
 #[derive(Parser, Debug)]
-#[clap(author, version, color = clap::ColorChoice::Auto, styles=get_styles())]
+#[clap(author, version, styles=get_styles())]
 pub struct Cli {
-    #[clap(short, long, value_name="REPOSITORY", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
+    #[clap(short, long, value_name="PATH", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
     pub directory: Option<PathBuf>,
 
     #[clap(
@@ -114,6 +114,7 @@ pub enum Strategy {
         #[clap(flatten)]
         bump_options: BumpingOptions,
     },
+    /// Development version (non-standard)
     Dev {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
