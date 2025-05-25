@@ -49,8 +49,8 @@ impl From<&PathBuf> for Settings {
 }
 impl Settings {
     /// Discovers/loads configuration from specified path
-    pub fn apply(&mut self, args: &Cli) {
-        let command = match &args.cmd {
+    pub fn apply(&mut self, cli: &Cli) {
+        let command = match &cli.cmd {
             crate::Commands::Current { .. } => "current",
             crate::Commands::Next { strategy, .. } => match strategy {
                 Some(Strategy::Major { .. }) => "next.major",
@@ -69,7 +69,7 @@ impl Settings {
         if let Ok(dir) = self.config.get::<String>(command, "directory") {
             self.directory = PathBuf::from(dir);
         }
-        if let Some(directory) = &args.directory {
+        if let Some(directory) = &cli.directory {
             self.directory = directory.clone();
         };
 
@@ -77,7 +77,7 @@ impl Settings {
         if let Ok(filter) = self.config.get::<String>(command, "tag_filter") {
             self.tag_filter = Regex::new(&filter).unwrap();
         }
-        if let Some(filter) = &args.filter_options.tag_filter {
+        if let Some(filter) = &cli.filter_options.tag_filter {
             self.tag_filter = Regex::new(filter).unwrap();
         };
 
@@ -85,7 +85,7 @@ impl Settings {
         if let Ok(template) = self.config.get::<String>(command, "output_template") {
             self.output_template = template
         }
-        if let Some(template) = &args.output_options.output_template {
+        if let Some(template) = &cli.output_options.output_template {
             self.output_template = template.clone();
         };
 
@@ -93,7 +93,7 @@ impl Settings {
         if let Ok(format) = self.config.get::<String>(command, "output_format") {
             self.output_format = Format::from_str(format.as_str(), true).unwrap();
         }
-        if let Some(format) = &args.output_options.format {
+        if let Some(format) = &cli.output_options.format {
             self.output_format = format.clone();
         };
 
