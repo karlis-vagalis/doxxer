@@ -1,22 +1,25 @@
+mod cli;
 mod config;
 mod git;
 mod settings;
 mod template;
-mod cli;
 
 use clap::Parser;
 use semver::Version;
 use serde_json::{json, Value};
 
+use cli::{Cli, Commands, Field, Format, PrereleaseOptions, Strategy};
 use git::{current_version, next_version};
 use settings::{default, Settings};
-use cli::{Cli, Commands, Field, Format, PrereleaseOptions, Strategy};
 
 use git2::Repository;
 
-
-
-fn output_version(field: &Option<Field>, version: &Version, output_template: &str, format: &Format) {
+fn output_version(
+    field: &Option<Field>,
+    version: &Version,
+    output_template: &str,
+    format: &Format,
+) {
     match format {
         Format::Plain => match field {
             None => {
@@ -62,8 +65,6 @@ fn output_version(field: &Option<Field>, version: &Version, output_template: &st
     }
 }
 
-
-
 fn main() {
     let cli = Cli::parse();
 
@@ -88,7 +89,12 @@ fn main() {
     match &cli.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &settings.tag_filter);
-            output_version(field, &version, &settings.output_template, &settings.output_format)
+            output_version(
+                field,
+                &version,
+                &settings.output_template,
+                &settings.output_format,
+            )
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
@@ -102,7 +108,12 @@ fn main() {
                 },
             };
             let version = next_version(&repo, &settings.tag_filter, strategy);
-            output_version(field, &version, &settings.output_template, &settings.output_format)
+            output_version(
+                field,
+                &version,
+                &settings.output_template,
+                &settings.output_format,
+            )
         }
     }
 }

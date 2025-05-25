@@ -23,7 +23,7 @@ pub struct Settings {
     pub directory: PathBuf,
     pub tag_filter: Regex,
     pub output_template: String,
-    pub output_format: Format
+    pub output_format: Format,
 }
 impl Default for Settings {
     fn default() -> Self {

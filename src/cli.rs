@@ -1,6 +1,12 @@
 use std::path::PathBuf;
 
-use clap::{builder::{styling::{Effects, RgbColor}, Styles}, Args, Parser, Subcommand, ValueEnum};
+use clap::{
+    builder::{
+        styling::{Effects, RgbColor},
+        Styles,
+    },
+    Args, Parser, Subcommand, ValueEnum,
+};
 
 use crate::settings::default;
 
@@ -111,7 +117,7 @@ pub enum Strategy {
     Dev {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
-    }
+    },
 }
 
 #[derive(Args, Debug)]
