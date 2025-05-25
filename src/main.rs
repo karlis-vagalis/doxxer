@@ -6,6 +6,7 @@ mod template;
 use clap::builder::styling::{Effects, RgbColor, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use semver::Version;
+use serde_json::{json, Value};
 use std::path::PathBuf;
 
 use git::{current_version, next_version};
@@ -154,33 +155,61 @@ struct FilterOptions {
 struct OutputOptions {
     #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
     output_template: Option<String>,
-    #[clap(short, long, help="Template for build metadata [default: ]")]
+    #[clap(short, long, help = "Template for build metadata [default: ]")]
     metadata_template: Option<String>,
-    #[clap(short, long, help="Output format [default: plain]")]
-    format: Option<Format>
+    #[clap(short, long, help = "Output format [default: plain]")]
+    format: Option<Format>,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
 enum Format {
     Plain,
-    Json
+    Json,
 }
 
-fn output_version(cmd: &Option<Field>, version: &Version, output_template: &str, format: Format) {
-    match cmd {
-        None => {
-            println!(
-                "{}",
-                output_template.replace("{version}", version.to_string().as_str())
-            );
-        }
-        Some(part) => match part {
-            Field::Major => println!("{}", version.major),
-            Field::Minor => println!("{}", version.minor),
-            Field::Patch => println!("{}", version.patch),
-            Field::Pre => println!("{}", version.pre),
-            Field::Build => println!("{}", version.build),
+fn output_version(field: &Option<Field>, version: &Version, output_template: &str, format: &Format) {
+    match format {
+        Format::Plain => match field {
+            None => {
+                println!(
+                    "{}",
+                    output_template.replace("{version}", version.to_string().as_str())
+                );
+            }
+            Some(part) => match part {
+                Field::Major => println!("{}", version.major),
+                Field::Minor => println!("{}", version.minor),
+                Field::Patch => println!("{}", version.patch),
+                Field::Pre => println!("{}", version.pre),
+                Field::Build => println!("{}", version.build),
+            },
         },
+        Format::Json => {
+            let json_value = match field {
+                Some(Field::Major) => json!({ "major": version.major }),
+                Some(Field::Minor) => json!({ "minor": version.minor }),
+                Some(Field::Patch) => json!({ "patch": version.patch }),
+                Some(Field::Pre) => json!({ "pre": version.pre.as_str() }),
+                Some(Field::Build) => json!({ "build": version.build.as_str() }),
+                None => {
+                    let mut map = serde_json::Map::new();
+                    map.insert("major".to_string(), json!(version.major));
+                    map.insert("minor".to_string(), json!(version.minor));
+                    map.insert("patch".to_string(), json!(version.patch));
+                    if !version.pre.is_empty() {
+                        map.insert("pre".to_string(), json!(version.pre.as_str()));
+                    }
+                    if !version.build.is_empty() {
+                        map.insert("build".to_string(), json!(version.build.as_str()));
+                    }
+                    map.insert("full".to_string(), json!(version.to_string()));
+                    Value::Object(map)
+                }
+            };
+            // This unwrap is generally safe if json! macro is used correctly.
+            // Consider .expect("Failed to serialize to JSON") for clarity.
+            println!("{}", serde_json::to_string_pretty(&json_value).unwrap());
+        }
     }
 }
 
@@ -216,7 +245,7 @@ fn main() {
     match &cli.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &settings.tag_filter);
-            output_version(field, &version, &settings.output_template)
+            output_version(field, &version, &settings.output_template, &settings.output_format)
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
@@ -230,7 +259,7 @@ fn main() {
                 },
             };
             let version = next_version(&repo, &settings.tag_filter, strategy);
-            output_version(field, &version, &settings.output_template)
+            output_version(field, &version, &settings.output_template, &settings.output_format)
         }
     }
 }
