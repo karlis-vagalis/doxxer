@@ -1,7 +1,8 @@
+use clap::ValueEnum;
 use regex::Regex;
 use std::path::PathBuf;
 
-use crate::{config::Configuration, Cli, Strategy};
+use crate::{config::Configuration, Cli, Format, Strategy};
 
 pub mod default {
     pub static DIRECTORY: &str = ".";
@@ -22,6 +23,7 @@ pub struct Settings {
     pub directory: PathBuf,
     pub tag_filter: Regex,
     pub output_template: String,
+    pub output_format: Format
 }
 impl Default for Settings {
     fn default() -> Self {
@@ -29,6 +31,7 @@ impl Default for Settings {
             directory: PathBuf::from(default::DIRECTORY),
             tag_filter: Regex::new(default::TAG_FILTER).unwrap(),
             output_template: default::OUTPUT_TEMPLATE.to_string(),
+            output_format: Format::Plain,
             config: Configuration::load(None),
         }
     }
@@ -39,6 +42,7 @@ impl From<&PathBuf> for Settings {
             directory: PathBuf::from(default::DIRECTORY),
             tag_filter: Regex::new(default::TAG_FILTER).unwrap(),
             output_template: default::OUTPUT_TEMPLATE.to_string(),
+            output_format: Format::Plain,
             config: Configuration::load(Some(config_path)),
         }
     }
@@ -82,6 +86,14 @@ impl Settings {
         }
         if let Some(template) = &args.output_options.output_template {
             self.output_template = template.clone();
+        };
+
+        // Output format
+        if let Ok(format) = self.config.get::<String>(command, "output_format") {
+            self.output_format = Format::from_str(format.as_str(), true).unwrap();
+        }
+        if let Some(format) = &args.output_options.format {
+            self.output_format = format.clone();
         };
 
         // Convert path to the absolute path

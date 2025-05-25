@@ -166,7 +166,7 @@ enum Format {
     Json
 }
 
-fn output_version(cmd: &Option<Field>, version: &Version, output_template: &str) {
+fn output_version(cmd: &Option<Field>, version: &Version, output_template: &str, format: Format) {
     match cmd {
         None => {
             println!(
