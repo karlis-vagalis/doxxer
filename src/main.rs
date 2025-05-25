@@ -155,7 +155,15 @@ struct OutputOptions {
     #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
     output_template: Option<String>,
     #[clap(short, long, help="Template for build metadata [default: ]")]
-    metadata_template: Option<String>
+    metadata_template: Option<String>,
+    #[clap(short, long, help="Output format [default: plain]")]
+    format: Option<Format>
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+enum Format {
+    Plain,
+    Json
 }
 
 fn output_version(cmd: &Option<Field>, version: &Version, output_template: &str) {
