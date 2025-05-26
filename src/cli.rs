@@ -7,15 +7,16 @@ use clap::{
     },
     Args, Parser, Subcommand, ValueEnum,
 };
+use serde::{Serialize, Deserialize};
 
 use crate::settings::default;
 
 /// Dynamic version manager for Git repositories
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Serialize, Deserialize)]
 #[clap(author, version, styles=get_styles())]
 pub struct Cli {
-    #[clap(short, long, value_name="PATH", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
-    pub directory: Option<PathBuf>,
+    #[clap(short, long, value_name="PATH", help="Path to the Git repository")]
+    pub directory: PathBuf,
 
     #[clap(
         short,
@@ -35,7 +36,7 @@ pub struct Cli {
     pub cmd: Commands,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Serialize, Deserialize)]
 pub enum Commands {
     /// Get current version
     Current {
@@ -54,7 +55,7 @@ pub enum Commands {
     },
 }
 
-#[derive(ValueEnum, Clone, Debug)]
+#[derive(ValueEnum, Clone, Debug, Serialize, Deserialize)]
 pub enum Field {
     Major,
     Minor,
@@ -64,7 +65,7 @@ pub enum Field {
 }
 
 /// Bumping strategy
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Serialize, Deserialize)]
 #[clap(
     subcommand_help_heading = "Bumping strategy",
     subcommand_value_name = "STRATEGY"
@@ -179,7 +180,7 @@ impl Strategy {
     }
 }
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, Serialize, Deserialize)]
 pub struct PrereleaseOptions {
     /// Prerelease identifier (e.g., alpha, beta, build, ...)
     #[clap(default_value = default::PRERELEASE_IDENTIFIER)]
@@ -190,20 +191,20 @@ pub struct PrereleaseOptions {
     pub prerelease_template: String,
 }
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, Serialize, Deserialize)]
 pub struct BumpingOptions {
     /// Bump increment
     #[clap(short, long, default_value_t = default::INCREMENT)]
     pub increment: u64,
 }
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, Serialize, Deserialize)]
 pub struct BuildMetadataOptions {
     #[clap(short, long, help = format!("Template for build metadata [default: {}]", default::BUILD_METADATA_TEMPLATE))]
     pub template: Option<String>,
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Serialize, Deserialize)]
 #[group(required = false, multiple = false)]
 pub struct FilterOptions {
     #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
@@ -211,7 +212,7 @@ pub struct FilterOptions {
 }
 
 /// Output options
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Serialize, Deserialize)]
 #[group(required = false, multiple = false)]
 pub struct OutputOptions {
     #[clap(short, long, help = "Output format [default: plain]")]
@@ -220,7 +221,7 @@ pub struct OutputOptions {
     pub output_template: Option<String>,
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, Serialize, Deserialize)]
 pub enum Format {
     Plain,
     Json,

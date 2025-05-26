@@ -1,5 +1,4 @@
 mod cli;
-mod config;
 mod settings;
 mod template;
 mod version;
@@ -7,12 +6,22 @@ mod version;
 use clap::Parser;
 
 use cli::{BuildMetadataOptions, Cli, Commands, Format, PrereleaseOptions, Strategy};
-use settings::{default, Settings};
+use figment::{providers::{Env, Format as _, Serialized, Toml}, Figment};
+use settings::{default};
 use version::{current_version, format_version, next_version};
 
 use git2::Repository;
 
 fn main() {
+    let cli: Cli = Figment::new()
+        .merge(Toml::file("doxxer.toml"))
+        .merge(Env::prefixed("DOXXER_"))
+        .merge(Serialized::defaults(Cli::parse()))
+        .extract().unwrap();
+
+
+
+    /*
     let cli = Cli::parse();
 
     let mut settings = match &cli.config {
@@ -63,4 +72,5 @@ fn main() {
             )
         }
     }
+     */
 }

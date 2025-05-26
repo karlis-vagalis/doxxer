@@ -4,7 +4,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{BuildMetadataOptions, Field, Format}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
+    cli::{BuildMetadataOptions, Cli, Field, Format}, template::TemplateVariables, PrereleaseOptions, Strategy
 };
 
 use regex::Regex;
@@ -118,7 +118,7 @@ fn get_inc(pre: &str, identifier: &str) -> usize {
     }
 }
 
-pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy, settings: &Settings) -> Version {
+pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> Version {
     let latest = current_version(repo, filter);
 
     let latest_tag_name = match find_tag_name_matching_version(repo, &latest.to_string(), filter) {
@@ -217,7 +217,10 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy, sett
                 identifier: prerelease_options.identifier.clone(),
             };
             pre = handle_prerelease(prerelease_options, &template_variables);
-            build = handle_build_metadata(build_metadata_options, &template_variables);
+            if let Some(template) = &build_metadata_options.template {
+                build = handle_build_metadata(&template, &template_variables);
+            }
+            
         }
         _ => {}
     }
@@ -232,10 +235,10 @@ fn handle_prerelease(options: &PrereleaseOptions, variables: &TemplateVariables)
 }
 
 fn handle_build_metadata(
-    options: &BuildMetadataOptions,
+    template: &str,
     variables: &TemplateVariables,
 ) -> BuildMetadata {
-    BuildMetadata::new(variables.inject(&options.template).as_str()).unwrap()
+    BuildMetadata::new(variables.inject(template).as_str()).unwrap()
 }
 
 pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
@@ -248,49 +251,47 @@ pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
 pub fn format_version(
     field: &Option<Field>,
     version: &Version,
-    settings: &Settings,
+    config: &Cli,
 ) {
-    match settings.output_format {
-        Format::Plain => match field {
-            None => {
-                println!(
-                    "{}",
-                    settings.output_template.replace("{version}", version.to_string().as_str())
-                );
-            }
-            Some(part) => match part {
-                Field::Major => println!("{}", version.major),
-                Field::Minor => println!("{}", version.minor),
-                Field::Patch => println!("{}", version.patch),
-                Field::Pre => println!("{}", version.pre),
-                Field::Build => println!("{}", version.build),
+    match config.output_options.format {
+        Some(Format::Plain) => match field {
+                        None => {
+                            todo!()
+                        }
+                        Some(part) => match part {
+                            Field::Major => println!("{}", version.major),
+                            Field::Minor => println!("{}", version.minor),
+                            Field::Patch => println!("{}", version.patch),
+                            Field::Pre => println!("{}", version.pre),
+                            Field::Build => println!("{}", version.build),
+                        },
             },
-        },
-        Format::Json => {
-            let json_value = match field {
-                Some(Field::Major) => json!({ "major": version.major }),
-                Some(Field::Minor) => json!({ "minor": version.minor }),
-                Some(Field::Patch) => json!({ "patch": version.patch }),
-                Some(Field::Pre) => json!({ "pre": version.pre.as_str() }),
-                Some(Field::Build) => json!({ "build": version.build.as_str() }),
-                None => {
-                    let mut map = serde_json::Map::new();
-                    map.insert("major".to_string(), json!(version.major));
-                    map.insert("minor".to_string(), json!(version.minor));
-                    map.insert("patch".to_string(), json!(version.patch));
-                    if !version.pre.is_empty() {
-                        map.insert("pre".to_string(), json!(version.pre.as_str()));
+        Some(Format::Json) => {
+                let json_value = match field {
+                    Some(Field::Major) => json!({ "major": version.major }),
+                    Some(Field::Minor) => json!({ "minor": version.minor }),
+                    Some(Field::Patch) => json!({ "patch": version.patch }),
+                    Some(Field::Pre) => json!({ "pre": version.pre.as_str() }),
+                    Some(Field::Build) => json!({ "build": version.build.as_str() }),
+                    None => {
+                        let mut map = serde_json::Map::new();
+                        map.insert("major".to_string(), json!(version.major));
+                        map.insert("minor".to_string(), json!(version.minor));
+                        map.insert("patch".to_string(), json!(version.patch));
+                        if !version.pre.is_empty() {
+                            map.insert("pre".to_string(), json!(version.pre.as_str()));
+                        }
+                        if !version.build.is_empty() {
+                            map.insert("build".to_string(), json!(version.build.as_str()));
+                        }
+                        map.insert("full".to_string(), json!(version.to_string()));
+                        Value::Object(map)
                     }
-                    if !version.build.is_empty() {
-                        map.insert("build".to_string(), json!(version.build.as_str()));
-                    }
-                    map.insert("full".to_string(), json!(version.to_string()));
-                    Value::Object(map)
-                }
-            };
-            // This unwrap is generally safe if json! macro is used correctly.
-            // Consider .expect("Failed to serialize to JSON") for clarity.
-            println!("{}", serde_json::to_string_pretty(&json_value).unwrap());
-        }
+                };
+                // This unwrap is generally safe if json! macro is used correctly.
+                // Consider .expect("Failed to serialize to JSON") for clarity.
+                println!("{}", serde_json::to_string_pretty(&json_value).unwrap());
+            }
+        None => todo!(),
     }
 }
