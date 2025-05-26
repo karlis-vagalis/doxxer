@@ -7,6 +7,7 @@ use clap::{
     },
     Args, Parser, Subcommand, ValueEnum,
 };
+use regex::Regex;
 
 use crate::{config::Configuration, default};
 
@@ -26,7 +27,7 @@ pub struct Cli {
     pub config: Option<PathBuf>,
 
     #[clap(flatten, next_help_heading = "Filter options")]
-    pub filter_options: FilterOptions,
+    pub filter: FilterOptions,
 
     #[clap(flatten, next_help_heading = "Output options")]
     pub output: OutputOptions,
@@ -36,7 +37,6 @@ pub struct Cli {
 }
 impl Cli {
     pub fn apply(&mut self, config: Configuration) {
-
         let command = match &self.cmd {
             crate::Commands::Current { .. } => "current",
             crate::Commands::Next { strategy, .. } => match strategy {
@@ -52,14 +52,21 @@ impl Cli {
             },
         };
 
-        self.directory = match config.get::<String>(command, "directory") {
-            Ok(dir) => Some(PathBuf::from(dir)),
-            Err(_) => Some(PathBuf::from(default::DIRECTORY)),
-        };
-        if let Some(directory) = &self.directory {
-            self.directory = Some(directory.clone());
+        self.directory = match &self.directory {
+            Some(directory) => Some(directory.clone()),
+            None => match config.get::<String>(command, "directory") {
+                Ok(dir) => Some(PathBuf::from(dir)),
+                Err(_) => Some(PathBuf::from(default::DIRECTORY)),
+            },
         };
 
+        self.filter.tag = match &self.filter.tag {
+            Some(filter) => Some(filter.clone()),
+            None => match config.get::<String>(command, "filter.tag") {
+                Ok(tag_filter) => Some(tag_filter),
+                Err(_) => Some(default::TAG_FILTER.to_string()),
+            },
+        }
     }
     pub fn validate(&self) {
         /*
@@ -180,14 +187,14 @@ pub struct BuildMetadataOptions {
 #[group(required = false, multiple = false)]
 pub struct FilterOptions {
     #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
-    pub tag_filter: Option<String>,
+    pub tag: Option<String>,
 }
 
 /// Output options
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 pub struct OutputOptions {
-    #[clap(short='f', long, help = "Output format [default: plain]")]
+    #[clap(short = 'f', long, help = "Output format [default: plain]")]
     pub format: Option<Format>,
     #[clap(short='o', long, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
     pub template: Option<String>,

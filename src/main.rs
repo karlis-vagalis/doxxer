@@ -46,7 +46,7 @@ fn main() {
         Some(d) => d,
         None => todo!(),
     };
-    let tag_filter = match &cli.filter_options.tag_filter {
+    let tag_filter = match &cli.filter.tag {
         Some(f) => regex::Regex::new(f).unwrap(),
         None => todo!(),
     };
