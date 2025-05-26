@@ -1,6 +1,6 @@
 mod cli;
 mod config;
-mod git;
+mod version;
 mod settings;
 mod template;
 
@@ -9,12 +9,12 @@ use semver::Version;
 use serde_json::{json, Value};
 
 use cli::{Cli, Commands, Field, Format, PrereleaseOptions, Strategy};
-use git::{current_version, next_version};
+use version::{current_version, next_version};
 use settings::{default, Settings};
 
 use git2::Repository;
 
-fn output_version(
+fn format_version(
     field: &Option<Field>,
     version: &Version,
     output_template: &str,
@@ -89,7 +89,7 @@ fn main() {
     match &cli.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &settings.tag_filter);
-            output_version(
+            format_version(
                 field,
                 &version,
                 &settings.output_template,
@@ -108,7 +108,7 @@ fn main() {
                 },
             };
             let version = next_version(&repo, &settings.tag_filter, strategy);
-            output_version(
+            format_version(
                 field,
                 &version,
                 &settings.output_template,
