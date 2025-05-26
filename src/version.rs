@@ -226,12 +226,14 @@ pub fn format_version(
     output_format: &Format,
     output_template: &str,
 ) {
+
+    let full_version = output_template.replace("{version}", version.to_string().as_str());
     match output_format {
         Format::Plain => match field {
             None => {
                 println!(
                     "{}",
-                    output_template.replace("{version}", version.to_string().as_str())
+                    full_version
                 );
             }
             Some(part) => match part {
@@ -260,7 +262,7 @@ pub fn format_version(
                     if !version.build.is_empty() {
                         map.insert("build".to_string(), json!(version.build.as_str()));
                     }
-                    map.insert("full".to_string(), json!(version.to_string()));
+                    map.insert("full".to_string(), json!(full_version));
                     Value::Object(map)
                 }
             };
