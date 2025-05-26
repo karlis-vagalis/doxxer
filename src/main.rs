@@ -31,15 +31,16 @@ pub mod default {
 }
 
 fn main() {
-    let cli = Cli::parse();
+    let mut cli = Cli::parse();
 
-    let mut config = match &cli.config {
+    let config = match &cli.config {
         Some(config_path) => Configuration::load(Some(config_path)),
         None => match &cli.directory {
             Some(dir) => Configuration::load(Some(dir)),
             None => Configuration::load(None),
         },
     };
+    cli.apply(config);
 
     let directory = match &cli.directory {
         Some(d) => d,

@@ -8,7 +8,7 @@ use clap::{
     Args, Parser, Subcommand, ValueEnum,
 };
 
-use crate::default;
+use crate::{config::Configuration, default};
 
 /// Dynamic version manager for Git repositories
 #[derive(Parser, Debug)]
@@ -35,6 +35,32 @@ pub struct Cli {
     pub cmd: Commands,
 }
 impl Cli {
+    pub fn apply(&mut self, config: Configuration) {
+
+        let command = match &self.cmd {
+            crate::Commands::Current { .. } => "current",
+            crate::Commands::Next { strategy, .. } => match strategy {
+                Some(Strategy::Major { .. }) => "next.major",
+                Some(Strategy::Minor { .. }) => "next.minor",
+                Some(Strategy::Patch { .. }) => "next.patch",
+                Some(Strategy::Prerelease { .. }) => "next.prerelease",
+                Some(Strategy::PreMajor { .. }) => "next.pre-major",
+                Some(Strategy::PreMinor { .. }) => "next.pre-minor",
+                Some(Strategy::PrePatch { .. }) => "next.pre-patch",
+                Some(Strategy::Dev { .. }) => "next.dev",
+                None => "next",
+            },
+        };
+
+        self.directory = match config.get::<String>(command, "directory") {
+            Ok(dir) => Some(PathBuf::from(dir)),
+            Err(_) => Some(PathBuf::from(default::DIRECTORY)),
+        };
+        if let Some(directory) = &self.directory {
+            self.directory = Some(directory.clone());
+        };
+
+    }
     pub fn validate(&self) {
         /*
         if !self.output_template.contains("{version}") {
