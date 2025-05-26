@@ -4,7 +4,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{BuildMetadataOptions, Field, Format, PreReleaseWithBumpArgs, StandardBumpArgs}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
+    cli::{BuildMetadataOptions, Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
 };
 
 use regex::Regex;
@@ -162,25 +162,10 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy, sett
 
     // Set new prerelease and metadata
     match strategy {
-        Strategy::Prerelease {
-            prerelease_options,
-            build_metadata_options,
-        }
-        | Strategy::PreMajor {
-            prerelease_options,
-            bump_options: _,
-            build_metadata_options,
-        }
-        | Strategy::PreMinor {
-            prerelease_options,
-            bump_options: _,
-            build_metadata_options,
-        }
-        | Strategy::PrePatch {
-            prerelease_options,
-            bump_options: _,
-            build_metadata_options,
-        } => {
+        Strategy::Prerelease(PrereleaseArgs{prerelease_options, build_metadata_options, ..})
+        | Strategy::PreMajor(PreReleaseWithBumpArgs{prerelease_options, build_metadata_options, ..})
+        | Strategy::PreMinor(PreReleaseWithBumpArgs{prerelease_options, build_metadata_options, ..})
+        | Strategy::PrePatch(PreReleaseWithBumpArgs{prerelease_options, build_metadata_options, ..}) => {
             let inc = get_inc(next.pre.as_str(), prerelease_options.identifier.as_str());
             let template_variables = TemplateVariables {
                 pre: next.pre.as_str().to_string(),
