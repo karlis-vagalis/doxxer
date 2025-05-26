@@ -6,7 +6,7 @@ mod version;
 
 use clap::Parser;
 
-use cli::{BuildMetadataOptions, Cli, Commands, Format, PrereleaseOptions, Strategy};
+use cli::{BuildMetadataOptions, Cli, Commands, Format, PrereleaseArgs, PrereleaseOptions, Strategy};
 use settings::{default, Settings};
 use version::{current_version, format_version, next_version};
 
@@ -45,7 +45,7 @@ fn main() {
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
                 Some(s) => s,
-                None => &Strategy::Dev {
+                None => &Strategy::Dev(PrereleaseArgs{
                     prerelease_options: PrereleaseOptions {
                         identifier: default::DEV_IDENTIFIER.to_string(),
                         prerelease_template: default::DEV_PRERELEASE_TEMPLATE.to_string(),
@@ -53,7 +53,7 @@ fn main() {
                     build_metadata_options: BuildMetadataOptions {
                         template: Some(default::BUILD_METADATA_TEMPLATE.to_string()),
                     },
-                },
+                }),
             };
             let version = next_version(&repo, &settings.tag_filter, strategy);
             format_version(

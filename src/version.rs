@@ -4,7 +4,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{BuildMetadataOptions, Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
+    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
 };
 
 use regex::Regex;
@@ -118,7 +118,7 @@ fn get_inc(pre: &str, identifier: &str) -> usize {
     }
 }
 
-pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy, settings: &Settings) -> Version {
+pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> Version {
     let latest = current_version(repo, filter);
 
     let latest_tag_name = match find_tag_name_matching_version(repo, &latest.to_string(), filter) {
@@ -175,7 +175,9 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy, sett
                 identifier: prerelease_options.identifier.clone(),
             };
             pre = handle_prerelease(prerelease_options, &template_variables);
-            build = handle_build_metadata(build_metadata_options, &template_variables);
+            if let Some(template) = &build_metadata_options.template {
+                build = handle_build_metadata(&template, &template_variables);
+            }
         }
         _ => {}
     }
@@ -190,10 +192,10 @@ fn handle_prerelease(options: &PrereleaseOptions, variables: &TemplateVariables)
 }
 
 fn handle_build_metadata(
-    options: &BuildMetadataOptions,
+    template: &str,
     variables: &TemplateVariables,
 ) -> BuildMetadata {
-    BuildMetadata::new(variables.inject(&options.template).as_str()).unwrap()
+    BuildMetadata::new(variables.inject(template).as_str()).unwrap()
 }
 
 pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
