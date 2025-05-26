@@ -30,7 +30,7 @@ pub struct Cli {
     pub filter_options: FilterOptions,
 
     #[clap(flatten, next_help_heading = "Output options")]
-    pub output_options: OutputOptions,
+    pub output: OutputOptions,
 
     #[command(subcommand)]
     pub cmd: Commands,
@@ -215,10 +215,10 @@ pub struct FilterOptions {
 #[derive(Debug, Args, Serialize, Deserialize)]
 #[group(required = false, multiple = false)]
 pub struct OutputOptions {
-    #[clap(short, long, help = "Output format", default_value_t=Format::Plain)]
+    #[clap(short='f', long, help = "Output format", default_value_t=Format::Plain)]
     pub format: Format,
-    #[clap(long, short, help="Template for resulting version", default_value=default::OUTPUT_TEMPLATE)]
-    pub output_template: String,
+    #[clap(short='o', long, help="Template for resulting version", default_value=default::OUTPUT_TEMPLATE)]
+    pub template: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ValueEnum)]

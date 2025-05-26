@@ -6,21 +6,30 @@ mod version;
 use clap::Parser;
 
 use cli::{BuildMetadataOptions, Cli, Commands, Format, PrereleaseOptions, Strategy};
-use figment::{providers::{Env, Format as _, Serialized, Toml}, Figment};
+use figment::{
+    providers::{Env, Format as _, Serialized, Toml},
+    Figment,
+};
 use regex::Regex;
-use settings::{default};
+use settings::default;
 use version::{current_version, format_version, next_version};
 
 use git2::Repository;
 
 fn main() {
-    let cli: Cli = Figment::new()
-        .merge(Toml::file("doxxer.toml"))
-        .merge(Env::prefixed("DOXXER_"))
-        .merge(Serialized::defaults(Cli::parse()))
-        .extract().unwrap();
+    let mut config: Figment = Figment::new().merge(Toml::file("doxxer.toml"));
 
-    let repo = match Repository::open(&cli.directory) {
+    dbg!(&config);
+
+    config = config.merge(Env::prefixed("DOXXER_"));
+    dbg!(&config);
+
+    config = config.merge(Serialized::defaults(Cli::parse()));
+    dbg!(&config);
+
+    let config: Cli = config.extract().unwrap();
+
+    let repo = match Repository::open(&config.directory) {
         Ok(repo) => repo,
         Err(e) => {
             eprintln!("Issue opening repository: {}!", e.message());
@@ -28,20 +37,14 @@ fn main() {
         }
     };
 
-    let tag_filter = Regex::new(&cli.filter_options.tag_filter).unwrap();
+    let tag_filter = Regex::new(&config.filter_options.tag_filter).unwrap();
 
-    match &cli.cmd {
+    match &config.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &tag_filter);
-            format_version(
-                field,
-                &version,
-                &cli,
-            )
-        },
-        Commands::Next { strategy, field } => {
-            
-        },
+            format_version(field, &version, &config)
+        }
+        Commands::Next { strategy, field } => {}
     }
 
     /*

@@ -245,12 +245,12 @@ pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
 }
 
 pub fn format_version(field: &Option<Field>, version: &Version, config: &Cli) {
-    match config.output_options.format {
+    match config.output.format {
         Format::Plain => match field {
             None => {
                 println!(
                     "{}",
-                    config.output_options.output_template.replace("{version}", version.to_string().as_str())
+                    config.output.template.replace("{version}", version.to_string().as_str())
                 );
             }
             Some(part) => match part {
