@@ -1,8 +1,9 @@
 use git2::{Error, ObjectType, Repository};
 use once_cell::sync::Lazy;
 use semver::{BuildMetadata, Prerelease, Version};
+use serde_json::{json, Value};
 
-use crate::{template::TemplateVariables, PrereleaseOptions, Strategy};
+use crate::{cli::{Field, Format}, template::TemplateVariables, PrereleaseOptions, Strategy};
 
 use regex::Regex;
 
@@ -219,5 +220,56 @@ pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
     match find_latest_semver(repo, filter) {
         Ok(Some(v)) => v,
         _ => Version::new(0, 0, 0),
+    }
+}
+
+pub fn format_version(
+    field: &Option<Field>,
+    version: &Version,
+    output_template: &str,
+    format: &Format,
+) {
+    match format {
+        Format::Plain => match field {
+            None => {
+                println!(
+                    "{}",
+                    output_template.replace("{version}", version.to_string().as_str())
+                );
+            }
+            Some(part) => match part {
+                Field::Major => println!("{}", version.major),
+                Field::Minor => println!("{}", version.minor),
+                Field::Patch => println!("{}", version.patch),
+                Field::Pre => println!("{}", version.pre),
+                Field::Build => println!("{}", version.build),
+            },
+        },
+        Format::Json => {
+            let json_value = match field {
+                Some(Field::Major) => json!({ "major": version.major }),
+                Some(Field::Minor) => json!({ "minor": version.minor }),
+                Some(Field::Patch) => json!({ "patch": version.patch }),
+                Some(Field::Pre) => json!({ "pre": version.pre.as_str() }),
+                Some(Field::Build) => json!({ "build": version.build.as_str() }),
+                None => {
+                    let mut map = serde_json::Map::new();
+                    map.insert("major".to_string(), json!(version.major));
+                    map.insert("minor".to_string(), json!(version.minor));
+                    map.insert("patch".to_string(), json!(version.patch));
+                    if !version.pre.is_empty() {
+                        map.insert("pre".to_string(), json!(version.pre.as_str()));
+                    }
+                    if !version.build.is_empty() {
+                        map.insert("build".to_string(), json!(version.build.as_str()));
+                    }
+                    map.insert("full".to_string(), json!(version.to_string()));
+                    Value::Object(map)
+                }
+            };
+            // This unwrap is generally safe if json! macro is used correctly.
+            // Consider .expect("Failed to serialize to JSON") for clarity.
+            println!("{}", serde_json::to_string_pretty(&json_value).unwrap());
+        }
     }
 }
