@@ -66,7 +66,23 @@ impl Cli {
                 Ok(tag_filter) => Some(tag_filter),
                 Err(_) => Some(default::TAG_FILTER.to_string()),
             },
-        }
+        };
+
+        self.output.format = match &self.output.format {
+            Some(format) => Some(format.clone()),
+            None => match config.get::<String>(command, "output.format") {
+                Ok(format) => Some(Format::from_str(&format, true).unwrap()),
+                Err(_) => Some(Format::Plain),
+            },
+        };
+
+        self.output.template = match &self.output.template {
+            Some(template) => Some(template.clone()),
+            None => match config.get::<String>(command, "output.template") {
+                Ok(template) => Some(template),
+                Err(_) => Some(default::OUTPUT_TEMPLATE.to_string()),
+            },
+        };
     }
     pub fn validate(&self) {
         /*
