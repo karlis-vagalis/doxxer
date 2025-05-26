@@ -4,7 +4,9 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs}, template::TemplateVariables, PrereleaseOptions, Strategy
+    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs},
+    template::TemplateVariables,
+    PrereleaseOptions, Strategy,
 };
 
 use regex::Regex;
@@ -141,19 +143,19 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> V
 
     // Set new major/minor/patch versions
     match strategy {
-        Strategy::Major(StandardBumpArgs{bump_options,..})
-        | Strategy::PreMajor(PreReleaseWithBumpArgs{bump_options, ..}) => {
+        Strategy::Major(StandardBumpArgs { bump_options, .. })
+        | Strategy::PreMajor(PreReleaseWithBumpArgs { bump_options, .. }) => {
             next.major += bump_options.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor(StandardBumpArgs{bump_options,..})
-        | Strategy::PreMinor(PreReleaseWithBumpArgs{bump_options, ..}) => {
+        Strategy::Minor(StandardBumpArgs { bump_options, .. })
+        | Strategy::PreMinor(PreReleaseWithBumpArgs { bump_options, .. }) => {
             next.minor += bump_options.increment;
             next.patch = 0;
         }
-        Strategy::Patch(StandardBumpArgs{bump_options,..})
-        | Strategy::PrePatch(PreReleaseWithBumpArgs{bump_options, ..}) => {
+        Strategy::Patch(StandardBumpArgs { bump_options, .. })
+        | Strategy::PrePatch(PreReleaseWithBumpArgs { bump_options, .. }) => {
             next.patch += bump_options.increment;
         }
         Strategy::Prerelease(_) => {}
@@ -162,10 +164,26 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> V
 
     // Set new prerelease and metadata
     match strategy {
-        Strategy::Prerelease(PrereleaseArgs{prerelease_options, build_metadata_options, ..})
-        | Strategy::PreMajor(PreReleaseWithBumpArgs{prerelease_options, build_metadata_options, ..})
-        | Strategy::PreMinor(PreReleaseWithBumpArgs{prerelease_options, build_metadata_options, ..})
-        | Strategy::PrePatch(PreReleaseWithBumpArgs{prerelease_options, build_metadata_options, ..}) => {
+        Strategy::Prerelease(PrereleaseArgs {
+            prerelease_options,
+            build_metadata_options,
+            ..
+        })
+        | Strategy::PreMajor(PreReleaseWithBumpArgs {
+            prerelease_options,
+            build_metadata_options,
+            ..
+        })
+        | Strategy::PreMinor(PreReleaseWithBumpArgs {
+            prerelease_options,
+            build_metadata_options,
+            ..
+        })
+        | Strategy::PrePatch(PreReleaseWithBumpArgs {
+            prerelease_options,
+            build_metadata_options,
+            ..
+        }) => {
             let inc = get_inc(next.pre.as_str(), prerelease_options.identifier.as_str());
             let template_variables = TemplateVariables {
                 pre: next.pre.as_str().to_string(),
@@ -191,10 +209,7 @@ fn handle_prerelease(options: &PrereleaseOptions, variables: &TemplateVariables)
     Prerelease::new(variables.inject(&options.prerelease_template).as_str()).unwrap()
 }
 
-fn handle_build_metadata(
-    template: &str,
-    variables: &TemplateVariables,
-) -> BuildMetadata {
+fn handle_build_metadata(template: &str, variables: &TemplateVariables) -> BuildMetadata {
     BuildMetadata::new(variables.inject(template).as_str()).unwrap()
 }
 
@@ -209,7 +224,7 @@ pub fn format_version(
     field: &Option<Field>,
     version: &Version,
     output_format: &Format,
-    output_template: &str
+    output_template: &str,
 ) {
     match output_format {
         Format::Plain => match field {

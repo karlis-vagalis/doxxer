@@ -7,7 +7,6 @@ use clap::{
     },
     Args, Parser, Subcommand, ValueEnum,
 };
-use regex::Regex;
 
 use crate::{config::Configuration, default};
 

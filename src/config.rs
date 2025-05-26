@@ -49,7 +49,12 @@ impl Configuration {
             None => {}
         }
 
-        config = config.add_source(config::Environment::with_prefix("DOXXER"));
+        config = config.add_source(
+            config::Environment::with_prefix("DOXXER")
+                .separator("__")
+                .try_parsing(true)
+                .list_separator(","),
+        );
         Self {
             config: config.build().expect("Failed to load config"),
         }

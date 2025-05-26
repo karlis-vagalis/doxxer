@@ -59,6 +59,7 @@ fn main() {
         None => todo!(),
     };
 
+    cli.validate();
 
     let repo = match Repository::open(&directory) {
         Ok(repo) => repo,
@@ -71,17 +72,12 @@ fn main() {
     match &cli.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &tag_filter);
-            format_version(
-                field,
-                &version,
-                &output_format,
-                &output_template
-            )
+            format_version(field, &version, &output_format, &output_template)
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
                 Some(s) => s,
-                None => &Strategy::Dev(PrereleaseArgs{
+                None => &Strategy::Dev(PrereleaseArgs {
                     prerelease_options: PrereleaseOptions {
                         identifier: default::DEV_IDENTIFIER.to_string(),
                         prerelease_template: default::DEV_PRERELEASE_TEMPLATE.to_string(),
@@ -92,12 +88,7 @@ fn main() {
                 }),
             };
             let version = next_version(&repo, &tag_filter, strategy);
-            format_version(
-                field,
-                &version,
-                &output_format,
-                &output_template
-            )
+            format_version(field, &version, &output_format, &output_template)
         }
     }
 }
