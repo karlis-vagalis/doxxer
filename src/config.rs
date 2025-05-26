@@ -1,7 +1,8 @@
-use crate::settings::default;
 use config::Config;
 use serde::Deserialize;
 use std::path::PathBuf;
+
+use crate::default;
 
 /// Thin wrapper around config::Config to implement related utility methods
 #[derive(Debug)]

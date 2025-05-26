@@ -8,7 +8,7 @@ use clap::{
     Args, Parser, Subcommand, ValueEnum,
 };
 
-use crate::settings::default;
+use crate::default;
 
 /// Dynamic version manager for Git repositories
 #[derive(Parser, Debug)]
@@ -33,6 +33,19 @@ pub struct Cli {
 
     #[command(subcommand)]
     pub cmd: Commands,
+}
+impl Cli {
+    pub fn validate(&self) {
+        /*
+        if !self.output_template.contains("{version}") {
+            eprintln!(
+                "Output template \"{}\" is missing required variable {{version}}",
+                self.output_template
+            );
+            std::process::exit(1);
+        }
+         */
+    }
 }
 
 #[derive(Subcommand, Debug)]

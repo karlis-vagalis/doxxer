@@ -4,7 +4,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
+    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs}, template::TemplateVariables, PrereleaseOptions, Strategy
 };
 
 use regex::Regex;
@@ -208,14 +208,15 @@ pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
 pub fn format_version(
     field: &Option<Field>,
     version: &Version,
-    settings: &Settings,
+    output_format: &Format,
+    output_template: &str
 ) {
-    match settings.output_format {
+    match output_format {
         Format::Plain => match field {
             None => {
                 println!(
                     "{}",
-                    settings.output_template.replace("{version}", version.to_string().as_str())
+                    output_template.replace("{version}", version.to_string().as_str())
                 );
             }
             Some(part) => match part {
