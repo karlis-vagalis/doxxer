@@ -41,6 +41,7 @@ fn main() {
         },
     };
     cli.apply(config);
+    cli.validate();
 
     let directory = match &cli.directory {
         Some(d) => d,
@@ -58,8 +59,6 @@ fn main() {
         Some(t) => t,
         None => todo!(),
     };
-
-    cli.validate();
 
     let repo = match Repository::open(&directory) {
         Ok(repo) => repo,
