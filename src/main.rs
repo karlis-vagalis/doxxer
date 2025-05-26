@@ -12,8 +12,6 @@ use settings::{default, Settings};
 
 use git2::Repository;
 
-
-
 fn main() {
     let cli = Cli::parse();
 

@@ -43,7 +43,7 @@ pub enum Commands {
         #[clap(short, long)]
         field: Option<Field>,
     },
-    #[clap(about=format!("Get next version\nIf no strategy is provided, falls back to dynamic version template \"{}\" with \"identifier={}\"", default::DEV_TEMPLATE, default::DEV_IDENTIFIER))]
+    /// Get next version
     Next {
         #[clap(subcommand)]
         strategy: Option<Strategy>,
