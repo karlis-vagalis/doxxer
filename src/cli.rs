@@ -161,9 +161,9 @@ pub struct FilterOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 pub struct OutputOptions {
-    #[clap(short, long, help = "Output format [default: plain]")]
+    #[clap(short='f', long, help = "Output format [default: plain]")]
     pub format: Option<Format>,
-    #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
+    #[clap(short='o', long, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
     pub template: Option<String>,
 }
 
