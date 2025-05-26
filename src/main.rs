@@ -7,6 +7,7 @@ use clap::Parser;
 
 use cli::{BuildMetadataOptions, Cli, Commands, Format, PrereleaseOptions, Strategy};
 use figment::{providers::{Env, Format as _, Serialized, Toml}, Figment};
+use regex::Regex;
 use settings::{default};
 use version::{current_version, format_version, next_version};
 
@@ -19,7 +20,29 @@ fn main() {
         .merge(Serialized::defaults(Cli::parse()))
         .extract().unwrap();
 
+    let repo = match Repository::open(&cli.directory) {
+        Ok(repo) => repo,
+        Err(e) => {
+            eprintln!("Issue opening repository: {}!", e.message());
+            std::process::exit(1);
+        }
+    };
 
+    let tag_filter = Regex::new(&cli.filter_options.tag_filter).unwrap();
+
+    match &cli.cmd {
+        Commands::Current { field } => {
+            let version = current_version(&repo, &tag_filter);
+            format_version(
+                field,
+                &version,
+                &cli,
+            )
+        },
+        Commands::Next { strategy, field } => {
+            
+        },
+    }
 
     /*
     let cli = Cli::parse();

@@ -15,7 +15,7 @@ use crate::settings::default;
 #[derive(Parser, Debug, Serialize, Deserialize)]
 #[clap(author, version, styles=get_styles())]
 pub struct Cli {
-    #[clap(short, long, value_name="PATH", help="Path to the Git repository")]
+    #[clap(short, long, value_name="PATH", help="Path to the Git repository", default_value=default::DIRECTORY)]
     pub directory: PathBuf,
 
     #[clap(
@@ -47,7 +47,7 @@ pub enum Commands {
     /// Get next version
     Next {
         #[clap(subcommand)]
-        strategy: Option<Strategy>,
+        strategy: Strategy,
 
         /// Field/part of the version
         #[clap(short, long)]
@@ -200,31 +200,39 @@ pub struct BumpingOptions {
 
 #[derive(Args, Debug, Serialize, Deserialize)]
 pub struct BuildMetadataOptions {
-    #[clap(short, long, help = format!("Template for build metadata [default: {}]", default::BUILD_METADATA_TEMPLATE))]
-    pub template: Option<String>,
+    #[clap(short, long, help ="Template for build metadata", default_value=default::BUILD_METADATA_TEMPLATE)]
+    pub template: String,
 }
 
 #[derive(Debug, Args, Serialize, Deserialize)]
 #[group(required = false, multiple = false)]
 pub struct FilterOptions {
-    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
-    pub tag_filter: Option<String>,
+    #[clap(short, long, value_name="REGEX",  help="Regular expression for selecting relevant tags", default_value=default::TAG_FILTER)]
+    pub tag_filter: String,
 }
 
 /// Output options
 #[derive(Debug, Args, Serialize, Deserialize)]
 #[group(required = false, multiple = false)]
 pub struct OutputOptions {
-    #[clap(short, long, help = "Output format [default: plain]")]
-    pub format: Option<Format>,
-    #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
-    pub output_template: Option<String>,
+    #[clap(short, long, help = "Output format", default_value_t=Format::Plain)]
+    pub format: Format,
+    #[clap(long, short, help="Template for resulting version", default_value=default::OUTPUT_TEMPLATE)]
+    pub output_template: String,
 }
 
-#[derive(Debug, Clone, ValueEnum, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ValueEnum)]
 pub enum Format {
     Plain,
     Json,
+}
+impl ToString for Format {
+    fn to_string(&self) -> String {
+        match &self {
+            Format::Plain => String::from("plain"),
+            Format::Json =>  String::from("json"),
+        }
+    }
 }
 
 fn get_styles() -> Styles {
