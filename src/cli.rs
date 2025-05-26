@@ -29,7 +29,7 @@ pub struct Cli {
     pub filter_options: FilterOptions,
 
     #[clap(flatten, next_help_heading = "Output options")]
-    pub output_options: OutputOptions,
+    pub output: OutputOptions,
 
     #[command(subcommand)]
     pub cmd: Commands,
@@ -71,112 +71,46 @@ pub enum Field {
 )]
 pub enum Strategy {
     /// Major version
-    Major {
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    Major(StandardBumpArgs),
     /// Minor version
-    Minor {
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    Minor(StandardBumpArgs),
     /// Patch version
-    Patch {
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    Patch(StandardBumpArgs),
     /// Pre-release version
-    Prerelease {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    Prerelease(PrereleaseArgs),
     /// Major + pre-release version
-    PreMajor {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    PreMajor(PreReleaseWithBumpArgs),
     /// Minor + pre-release version
-    PreMinor {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    PreMinor(PreReleaseWithBumpArgs),
     /// Patch + pre-release version
-    PrePatch {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-
-        #[clap(flatten)]
-        bump_options: BumpingOptions,
-
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    PrePatch(PreReleaseWithBumpArgs),
     /// Development version (non-standard)
-    Dev {
-        #[clap(flatten)]
-        prerelease_options: PrereleaseOptions,
-
-        #[clap(flatten)]
-        build_metadata_options: BuildMetadataOptions,
-    },
+    Dev(PrereleaseArgs),
 }
-impl Strategy {
-    pub fn get_build_metadata_options(&self) -> &BuildMetadataOptions {
-        match self {
-            Strategy::Major {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-            Strategy::Minor {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-            Strategy::Patch {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-            Strategy::Prerelease {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-            Strategy::PreMajor {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-            Strategy::PreMinor {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-            Strategy::PrePatch {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-            Strategy::Dev {
-                build_metadata_options,
-                ..
-            } => build_metadata_options,
-        }
-    }
+#[derive(Debug, Args)]
+pub struct StandardBumpArgs {
+    #[clap(flatten)]
+    pub bump_options: BumpingOptions,
+    #[clap(flatten)]
+    pub build_metadata_options: BuildMetadataOptions,
+}
+
+#[derive(Debug, Args)]
+pub struct PrereleaseArgs {
+    #[clap(flatten)]
+    pub prerelease_options: PrereleaseOptions,
+    #[clap(flatten)]
+    pub build_metadata_options: BuildMetadataOptions,
+}
+
+#[derive(Debug, Args)]
+pub struct PreReleaseWithBumpArgs {
+    #[clap(flatten)]
+    pub prerelease_options: PrereleaseOptions,
+    #[clap(flatten)]
+    pub bump_options: BumpingOptions,
+    #[clap(flatten)]
+    pub build_metadata_options: BuildMetadataOptions,
 }
 
 #[derive(Args, Debug)]
@@ -217,7 +151,7 @@ pub struct OutputOptions {
     #[clap(short, long, help = "Output format [default: plain]")]
     pub format: Option<Format>,
     #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
-    pub output_template: Option<String>,
+    pub template: Option<String>,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

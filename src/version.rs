@@ -4,7 +4,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{BuildMetadataOptions, Field, Format}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
+    cli::{BuildMetadataOptions, Field, Format, PreReleaseWithBumpArgs, StandardBumpArgs}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
 };
 
 use regex::Regex;
@@ -141,50 +141,23 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy, sett
 
     // Set new major/minor/patch versions
     match strategy {
-        Strategy::Major {
-            bump_options,
-            build_metadata_options,
-        }
-        | Strategy::PreMajor {
-            prerelease_options: _,
-            bump_options,
-            build_metadata_options,
-        } => {
+        Strategy::Major(StandardBumpArgs{bump_options,..})
+        | Strategy::PreMajor(PreReleaseWithBumpArgs{bump_options, ..}) => {
             next.major += bump_options.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor {
-            bump_options,
-            build_metadata_options,
-        }
-        | Strategy::PreMinor {
-            prerelease_options: _,
-            bump_options,
-            build_metadata_options,
-        } => {
+        Strategy::Minor(StandardBumpArgs{bump_options,..})
+        | Strategy::PreMinor(PreReleaseWithBumpArgs{bump_options, ..}) => {
             next.minor += bump_options.increment;
             next.patch = 0;
         }
-        Strategy::Patch {
-            bump_options,
-            build_metadata_options,
-        }
-        | Strategy::PrePatch {
-            prerelease_options: _,
-            bump_options,
-            build_metadata_options,
-        } => {
+        Strategy::Patch(StandardBumpArgs{bump_options,..})
+        | Strategy::PrePatch(PreReleaseWithBumpArgs{bump_options, ..}) => {
             next.patch += bump_options.increment;
         }
-        Strategy::Prerelease {
-            prerelease_options: _,
-            build_metadata_options,
-        } => {}
-        Strategy::Dev {
-            prerelease_options: _,
-            build_metadata_options,
-        } => {}
+        Strategy::Prerelease(_) => {}
+        Strategy::Dev(_) => {}
     }
 
     // Set new prerelease and metadata

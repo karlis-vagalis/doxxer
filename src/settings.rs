@@ -95,7 +95,7 @@ impl Settings {
         if let Ok(template) = self.config.get::<String>(command, "output_template") {
             self.output_template = template
         }
-        if let Some(template) = &cli.output_options.output_template {
+        if let Some(template) = &cli.output.template {
             self.output_template = template.clone();
         };
 
@@ -103,28 +103,9 @@ impl Settings {
         if let Ok(format) = self.config.get::<String>(command, "output_format") {
             self.output_format = Format::from_str(format.as_str(), true).unwrap();
         }
-        if let Some(format) = &cli.output_options.format {
+        if let Some(format) = &cli.output.format {
             self.output_format = format.clone();
         };
-
-        match &cli.cmd {
-            crate::cli::Commands::Current { field } => {}
-            crate::cli::Commands::Next { strategy, field } => {
-                if let Some(strategy) = strategy {
-                    let build_metadata_options = strategy.get_build_metadata_options();
-
-                    if let Ok(template) = self
-                        .config
-                        .get::<String>(command, "build_metadata_template")
-                    {
-                        self.build_metadata_template = template;
-                    }
-                    if let Some(template) = &build_metadata_options.template {
-                        self.build_metadata_template = template.clone();
-                    };
-                }
-            }
-        }
 
         // Convert path to the absolute path
         self.directory = std::path::absolute(&self.directory).unwrap();
