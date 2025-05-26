@@ -74,21 +74,29 @@ pub enum Strategy {
     Major {
         #[clap(flatten)]
         bump_options: BumpingOptions,
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
     /// Minor version
     Minor {
         #[clap(flatten)]
         bump_options: BumpingOptions,
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
     /// Patch version
     Patch {
         #[clap(flatten)]
         bump_options: BumpingOptions,
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
     /// Pre-release version
     Prerelease {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
     /// Major + pre-release version
     PreMajor {
@@ -97,6 +105,9 @@ pub enum Strategy {
 
         #[clap(flatten)]
         bump_options: BumpingOptions,
+
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
     /// Minor + pre-release version
     PreMinor {
@@ -105,6 +116,9 @@ pub enum Strategy {
 
         #[clap(flatten)]
         bump_options: BumpingOptions,
+
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
     /// Patch + pre-release version
     PrePatch {
@@ -113,12 +127,56 @@ pub enum Strategy {
 
         #[clap(flatten)]
         bump_options: BumpingOptions,
+
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
     /// Development version (non-standard)
     Dev {
         #[clap(flatten)]
         prerelease_options: PrereleaseOptions,
+
+        #[clap(flatten)]
+        build_metadata_options: BuildMetadataOptions,
     },
+}
+impl Strategy {
+    pub fn get_build_metadata_options(&self) -> &BuildMetadataOptions {
+        match self {
+            Strategy::Major {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+            Strategy::Minor {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+            Strategy::Patch {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+            Strategy::Prerelease {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+            Strategy::PreMajor {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+            Strategy::PreMinor {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+            Strategy::PrePatch {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+            Strategy::Dev {
+                build_metadata_options,
+                ..
+            } => build_metadata_options,
+        }
+    }
 }
 
 #[derive(Args, Debug)]
@@ -130,10 +188,6 @@ pub struct PrereleaseOptions {
     /// Template for next version's pre-release
     #[clap(short, long, default_value = default::PRERELEASE_TEMPLATE)]
     pub prerelease_template: String,
-
-    /// Template for next version's build metadata
-    #[clap(short, long, default_value = default::BUILD_TEMPLATE)]
-    pub build_template: String,
 }
 
 #[derive(Args, Debug)]
@@ -141,6 +195,12 @@ pub struct BumpingOptions {
     /// Bump increment
     #[clap(short, long, default_value_t = default::INCREMENT)]
     pub increment: u64,
+}
+
+#[derive(Args, Debug)]
+pub struct BuildMetadataOptions {
+    #[clap(short, long, help = format!("Template for build metadata [default: {}]", default::BUILD_METADATA_TEMPLATE))]
+    pub template: Option<String>,
 }
 
 #[derive(Debug, Args)]
@@ -154,12 +214,10 @@ pub struct FilterOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 pub struct OutputOptions {
-    #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
-    pub output_template: Option<String>,
-    #[clap(short, long, help = "Template for build metadata [default: ]")]
-    pub metadata_template: Option<String>,
     #[clap(short, long, help = "Output format [default: plain]")]
     pub format: Option<Format>,
+    #[clap(long, short, help=format!("Template for resulting version [default: {}]", default::OUTPUT_TEMPLATE))]
+    pub output_template: Option<String>,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

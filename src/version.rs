@@ -3,7 +3,9 @@ use once_cell::sync::Lazy;
 use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
-use crate::{cli::{Field, Format}, template::TemplateVariables, PrereleaseOptions, Strategy};
+use crate::{
+    cli::{BuildMetadataOptions, Field, Format}, settings::Settings, template::TemplateVariables, PrereleaseOptions, Strategy
+};
 
 use regex::Regex;
 
@@ -116,7 +118,7 @@ fn get_inc(pre: &str, identifier: &str) -> usize {
     }
 }
 
-pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> Version {
+pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy, settings: &Settings) -> Version {
     let latest = current_version(repo, filter);
 
     let latest_tag_name = match find_tag_name_matching_version(repo, &latest.to_string(), filter) {
@@ -139,52 +141,72 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> V
 
     // Set new major/minor/patch versions
     match strategy {
-        Strategy::Major { bump_options }
+        Strategy::Major {
+            bump_options,
+            build_metadata_options,
+        }
         | Strategy::PreMajor {
             prerelease_options: _,
             bump_options,
+            build_metadata_options,
         } => {
             next.major += bump_options.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor { bump_options }
+        Strategy::Minor {
+            bump_options,
+            build_metadata_options,
+        }
         | Strategy::PreMinor {
             prerelease_options: _,
             bump_options,
+            build_metadata_options,
         } => {
             next.minor += bump_options.increment;
             next.patch = 0;
         }
-        Strategy::Patch { bump_options }
+        Strategy::Patch {
+            bump_options,
+            build_metadata_options,
+        }
         | Strategy::PrePatch {
             prerelease_options: _,
             bump_options,
+            build_metadata_options,
         } => {
             next.patch += bump_options.increment;
         }
         Strategy::Prerelease {
             prerelease_options: _,
+            build_metadata_options,
         } => {}
         Strategy::Dev {
             prerelease_options: _,
+            build_metadata_options,
         } => {}
     }
 
     // Set new prerelease and metadata
     match strategy {
-        Strategy::Prerelease { prerelease_options }
+        Strategy::Prerelease {
+            prerelease_options,
+            build_metadata_options,
+        }
         | Strategy::PreMajor {
             prerelease_options,
             bump_options: _,
+            build_metadata_options,
         }
         | Strategy::PreMinor {
             prerelease_options,
             bump_options: _,
+            build_metadata_options,
         }
         | Strategy::PrePatch {
             prerelease_options,
             bump_options: _,
+            build_metadata_options,
         } => {
             let inc = get_inc(next.pre.as_str(), prerelease_options.identifier.as_str());
             let template_variables = TemplateVariables {
@@ -195,7 +217,7 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> V
                 identifier: prerelease_options.identifier.clone(),
             };
             pre = handle_prerelease(prerelease_options, &template_variables);
-            build = handle_build_metadata(prerelease_options, &template_variables);
+            build = handle_build_metadata(build_metadata_options, &template_variables);
         }
         _ => {}
     }
@@ -210,10 +232,10 @@ fn handle_prerelease(options: &PrereleaseOptions, variables: &TemplateVariables)
 }
 
 fn handle_build_metadata(
-    options: &PrereleaseOptions,
+    options: &BuildMetadataOptions,
     variables: &TemplateVariables,
 ) -> BuildMetadata {
-    BuildMetadata::new(variables.inject(&options.build_template).as_str()).unwrap()
+    BuildMetadata::new(variables.inject(&options.template).as_str()).unwrap()
 }
 
 pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
@@ -226,15 +248,14 @@ pub fn current_version(repo: &Repository, filter: &Regex) -> Version {
 pub fn format_version(
     field: &Option<Field>,
     version: &Version,
-    output_template: &str,
-    format: &Format,
+    settings: &Settings,
 ) {
-    match format {
+    match settings.output_format {
         Format::Plain => match field {
             None => {
                 println!(
                     "{}",
-                    output_template.replace("{version}", version.to_string().as_str())
+                    settings.output_template.replace("{version}", version.to_string().as_str())
                 );
             }
             Some(part) => match part {

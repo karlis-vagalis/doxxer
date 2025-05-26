@@ -5,16 +5,22 @@ use std::path::PathBuf;
 use crate::{config::Configuration, Cli, Format, Strategy};
 
 pub mod default {
+    pub static CONFIG_FILE_NAME: &str = "doxxer";
+
     pub static DIRECTORY: &str = ".";
     pub static TAG_FILTER: &str = "";
     pub static OUTPUT_TEMPLATE: &str = "{version}";
-    pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
-    pub static DEV_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
-    pub static BUILD_TEMPLATE: &str = "{hash}";
+
+    pub static INCREMENT: u64 = 1;
+
     pub static PRERELEASE_IDENTIFIER: &str = "build";
     pub static DEV_IDENTIFIER: &str = "dev";
-    pub static INCREMENT: u64 = 1;
-    pub static CONFIG_FILE_NAME: &str = "doxxer";
+
+    pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
+    pub static DEV_PRERELEASE_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
+
+    pub static BUILD_METADATA_TEMPLATE: &str = "";
+    pub static DEV_BUILD_METADATA_TEMPLATE: &str = "{hash}";
 }
 
 #[derive(Debug)]
@@ -22,17 +28,20 @@ pub struct Settings {
     config: Configuration,
     pub directory: PathBuf,
     pub tag_filter: Regex,
-    pub output_template: String,
     pub output_format: Format,
+
+    pub output_template: String,
+    pub build_metadata_template: String,
 }
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            config: Configuration::load(None),
             directory: PathBuf::from(default::DIRECTORY),
             tag_filter: Regex::new(default::TAG_FILTER).unwrap(),
             output_template: default::OUTPUT_TEMPLATE.to_string(),
             output_format: Format::Plain,
-            config: Configuration::load(None),
+            build_metadata_template: default::BUILD_METADATA_TEMPLATE.to_string(),
         }
     }
 }
@@ -44,6 +53,7 @@ impl From<&PathBuf> for Settings {
             output_template: default::OUTPUT_TEMPLATE.to_string(),
             output_format: Format::Plain,
             config: Configuration::load(Some(config_path)),
+            build_metadata_template: default::BUILD_METADATA_TEMPLATE.to_string(),
         }
     }
 }
@@ -96,6 +106,25 @@ impl Settings {
         if let Some(format) = &cli.output_options.format {
             self.output_format = format.clone();
         };
+
+        match &cli.cmd {
+            crate::cli::Commands::Current { field } => {}
+            crate::cli::Commands::Next { strategy, field } => {
+                if let Some(strategy) = strategy {
+                    let build_metadata_options = strategy.get_build_metadata_options();
+
+                    if let Ok(template) = self
+                        .config
+                        .get::<String>(command, "build_metadata_template")
+                    {
+                        self.build_metadata_template = template;
+                    }
+                    if let Some(template) = &build_metadata_options.template {
+                        self.build_metadata_template = template.clone();
+                    };
+                }
+            }
+        }
 
         // Convert path to the absolute path
         self.directory = std::path::absolute(&self.directory).unwrap();

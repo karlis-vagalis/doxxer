@@ -1,14 +1,14 @@
 mod cli;
 mod config;
-mod version;
 mod settings;
 mod template;
+mod version;
 
 use clap::Parser;
 
-use cli::{Cli, Commands, Format, PrereleaseOptions, Strategy};
-use version::{current_version, format_version, next_version};
+use cli::{BuildMetadataOptions, Cli, Commands, Format, PrereleaseOptions, Strategy};
 use settings::{default, Settings};
+use version::{current_version, format_version, next_version};
 
 use git2::Repository;
 
@@ -25,7 +25,7 @@ fn main() {
     settings.apply(&cli);
     settings.validate();
 
-    let repo = match Repository::open(settings.directory) {
+    let repo = match Repository::open(&settings.directory) {
         Ok(repo) => repo,
         Err(e) => {
             eprintln!("Issue opening repository: {}!", e.message());
@@ -39,18 +39,19 @@ fn main() {
             format_version(
                 field,
                 &version,
-                &settings.output_template,
-                &settings.output_format,
+                &settings,
             )
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
                 Some(s) => s,
-                None => &Strategy::Prerelease {
+                None => &Strategy::Dev {
                     prerelease_options: PrereleaseOptions {
-                        prerelease_template: String::from(default::DEV_TEMPLATE),
-                        build_template: String::from(default::BUILD_TEMPLATE),
-                        identifier: String::from(default::DEV_IDENTIFIER),
+                        identifier: default::DEV_IDENTIFIER.to_string(),
+                        prerelease_template: default::DEV_PRERELEASE_TEMPLATE.to_string(),
+                    },
+                    build_metadata_options: BuildMetadataOptions {
+                        template: Some(default::BUILD_METADATA_TEMPLATE.to_string()),
                     },
                 },
             };
@@ -58,8 +59,7 @@ fn main() {
             format_version(
                 field,
                 &version,
-                &settings.output_template,
-                &settings.output_format,
+                &settings,
             )
         }
     }
