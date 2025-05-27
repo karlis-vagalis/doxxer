@@ -4,10 +4,10 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs},
+    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs},
     settings::Settings,
     template::TemplateVariables,
-    PrereleaseOptions, Strategy,
+    Strategy,
 };
 
 use regex::Regex;
@@ -163,38 +163,20 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
 
     // Set new prerelease and metadata
     match strategy {
-        Strategy::Prerelease(PrereleaseArgs {
-            prerelease_options,
-            build_metadata_options,
-            ..
-        })
-        | Strategy::PreMajor(PreReleaseWithBumpArgs {
-            prerelease_options,
-            build_metadata_options,
-            ..
-        })
-        | Strategy::PreMinor(PreReleaseWithBumpArgs {
-            prerelease_options,
-            build_metadata_options,
-            ..
-        })
-        | Strategy::PrePatch(PreReleaseWithBumpArgs {
-            prerelease_options,
-            build_metadata_options,
-            ..
-        }) => {
-            let inc = get_inc(next.pre.as_str(), prerelease_options.identifier.as_str());
+        Strategy::Prerelease(_)
+        | Strategy::PreMajor(_)
+        | Strategy::PreMinor(_)
+        | Strategy::PrePatch(_) => {
+            let inc = get_inc(next.pre.as_str(), &settings.prerelease.identifier.as_str());
             let template_variables = TemplateVariables {
                 pre: next.pre.as_str().to_string(),
                 inc,
                 hash: short_hash,
                 distance: commit_count,
-                identifier: prerelease_options.identifier.clone(),
+                identifier: settings.prerelease.identifier.clone(),
             };
-            pre = handle_prerelease(prerelease_options, &template_variables);
-            if let Some(template) = &build_metadata_options.template {
-                build = handle_build_metadata(&template, &template_variables);
-            }
+            pre = handle_prerelease(&settings.prerelease.template, &template_variables);
+            build = handle_build_metadata(&settings.build.template, &template_variables);
         }
         _ => {}
     }
@@ -204,8 +186,8 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
     next
 }
 
-fn handle_prerelease(options: &PrereleaseOptions, variables: &TemplateVariables) -> Prerelease {
-    Prerelease::new(variables.inject(&options.prerelease_template).as_str()).unwrap()
+fn handle_prerelease(template: &str, variables: &TemplateVariables) -> Prerelease {
+    Prerelease::new(variables.inject(template).as_str()).unwrap()
 }
 
 fn handle_build_metadata(template: &str, variables: &TemplateVariables) -> BuildMetadata {

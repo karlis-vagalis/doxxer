@@ -4,7 +4,10 @@ use clap::ValueEnum as _;
 use regex::Regex;
 
 use crate::{
-    cli::{BumpingOptions, Cli, Format, StandardBumpArgs, Strategy},
+    cli::{
+        BuildMetadataOptions, BumpingOptions, Cli, Format, PreReleaseWithBumpArgs, PrereleaseArgs,
+        PrereleaseOptions, StandardBumpArgs, Strategy,
+    },
     config::Configuration,
     default,
 };
@@ -22,11 +25,22 @@ pub struct BumpSettings {
     pub increment: u64,
 }
 
+pub struct PrereleaseSettings {
+    pub identifier: String,
+    pub template: String,
+}
+
+pub struct BuildMetadataSettings {
+    pub template: String,
+}
+
 pub struct Settings {
     pub directory: PathBuf,
     pub filter: FilterSettings,
     pub output: OutputSettings,
     pub bump: BumpSettings,
+    pub prerelease: PrereleaseSettings,
+    pub build: BuildMetadataSettings,
 }
 
 impl Settings {
@@ -80,22 +94,139 @@ impl Settings {
         };
 
         let mut increment: u64 = default::INCREMENT;
+
+        let mut prerelease_identifier: String = default::PRERELEASE_IDENTIFIER.to_string();
+        let mut prerelease_template: String = default::PRERELEASE_TEMPLATE.to_string();
+
+        let mut build_metadata_template: String = default::BUILD_METADATA_TEMPLATE.to_string();
         match &cli.cmd {
-            crate::cli::Commands::Current { field } => {}
-            crate::cli::Commands::Next { strategy, field } => match strategy {
+            crate::cli::Commands::Current { field: _ } => {}
+            crate::cli::Commands::Next { strategy, field: _ } => match strategy {
                 Some(strategy) => match strategy {
-                    Strategy::Major(StandardBumpArgs { bump_options, .. }) => {
+                    Strategy::Major(StandardBumpArgs {
+                        bump_options,
+                        build_metadata_options,
+                    }) => {
                         increment = Settings::get_increment(config, bump_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
                     }
-                    Strategy::Minor(StandardBumpArgs { bump_options, .. }) => {
+                    Strategy::Minor(StandardBumpArgs {
+                        bump_options,
+                        build_metadata_options,
+                    }) => {
                         increment = Settings::get_increment(config, bump_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
                     }
-                    Strategy::Patch(_) => todo!(),
-                    Strategy::Prerelease(_) => todo!(),
-                    Strategy::PreMajor(_) => todo!(),
-                    Strategy::PreMinor(_) => todo!(),
-                    Strategy::PrePatch(_) => todo!(),
-                    Strategy::Dev(_) => todo!(),
+                    Strategy::Patch(StandardBumpArgs {
+                        bump_options,
+                        build_metadata_options,
+                    }) => {
+                        increment = Settings::get_increment(config, bump_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
+                    }
+                    Strategy::Prerelease(PrereleaseArgs {
+                        prerelease_options,
+                        build_metadata_options,
+                    }) => {
+                        prerelease_identifier = Settings::get_prerelease_identifier(
+                            config,
+                            prerelease_options,
+                            command,
+                        );
+                        prerelease_template =
+                            Settings::get_prerelease_template(config, prerelease_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
+                    }
+                    Strategy::PreMajor(PreReleaseWithBumpArgs {
+                        bump_options,
+                        prerelease_options,
+                        build_metadata_options,
+                    }) => {
+                        increment = Settings::get_increment(config, bump_options, command);
+                        prerelease_identifier = Settings::get_prerelease_identifier(
+                            config,
+                            prerelease_options,
+                            command,
+                        );
+                        prerelease_template =
+                            Settings::get_prerelease_template(config, prerelease_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
+                    }
+                    Strategy::PreMinor(PreReleaseWithBumpArgs {
+                        bump_options,
+                        prerelease_options,
+                        build_metadata_options,
+                    }) => {
+                        increment = Settings::get_increment(config, bump_options, command);
+                        prerelease_identifier = Settings::get_prerelease_identifier(
+                            config,
+                            prerelease_options,
+                            command,
+                        );
+                        prerelease_template =
+                            Settings::get_prerelease_template(config, prerelease_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
+                    }
+                    Strategy::PrePatch(PreReleaseWithBumpArgs {
+                        bump_options,
+                        build_metadata_options,
+                        prerelease_options,
+                    }) => {
+                        increment = Settings::get_increment(config, bump_options, command);
+                        prerelease_identifier = Settings::get_prerelease_identifier(
+                            config,
+                            prerelease_options,
+                            command,
+                        );
+                        prerelease_template =
+                            Settings::get_prerelease_template(config, prerelease_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
+                    }
+                    Strategy::Dev(PrereleaseArgs {
+                        prerelease_options,
+                        build_metadata_options,
+                    }) => {
+                        prerelease_identifier = Settings::get_prerelease_identifier(
+                            config,
+                            prerelease_options,
+                            command,
+                        );
+                        prerelease_template =
+                            Settings::get_prerelease_template(config, prerelease_options, command);
+                        build_metadata_template = Settings::get_build_metadata_template(
+                            config,
+                            build_metadata_options,
+                            command,
+                        );
+                    }
                 },
                 None => {}
             },
@@ -111,6 +242,13 @@ impl Settings {
             bump: BumpSettings {
                 increment: increment,
             },
+            prerelease: PrereleaseSettings {
+                identifier: prerelease_identifier,
+                template: prerelease_template,
+            },
+            build: BuildMetadataSettings {
+                template: build_metadata_template,
+            },
         }
     }
 
@@ -120,6 +258,48 @@ impl Settings {
             None => match config.get::<u64>(command, "increment") {
                 Ok(i) => i,
                 Err(_) => default::INCREMENT,
+            },
+        }
+    }
+
+    fn get_prerelease_identifier(
+        config: &Configuration,
+        prerelease_options: &PrereleaseOptions,
+        command: &str,
+    ) -> String {
+        match &prerelease_options.identifier {
+            Some(s) => s.clone(),
+            None => match config.get::<String>(command, "identifier") {
+                Ok(s) => s,
+                Err(_) => default::PRERELEASE_IDENTIFIER.to_string(),
+            },
+        }
+    }
+
+    fn get_prerelease_template(
+        config: &Configuration,
+        prerelease_options: &PrereleaseOptions,
+        command: &str,
+    ) -> String {
+        match &prerelease_options.prerelease_template {
+            Some(s) => s.clone(),
+            None => match config.get::<String>(command, "template") {
+                Ok(s) => s,
+                Err(_) => default::PRERELEASE_TEMPLATE.to_string(),
+            },
+        }
+    }
+
+    fn get_build_metadata_template(
+        config: &Configuration,
+        build_metadata_options: &BuildMetadataOptions,
+        command: &str,
+    ) -> String {
+        match &build_metadata_options.build_metadata_template {
+            Some(s) => s.clone(),
+            None => match config.get::<String>(command, "template") {
+                Ok(s) => s,
+                Err(_) => default::BUILD_METADATA_TEMPLATE.to_string(),
             },
         }
     }

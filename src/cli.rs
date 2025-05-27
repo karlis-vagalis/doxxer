@@ -116,12 +116,12 @@ pub struct PreReleaseWithBumpArgs {
 #[derive(Args, Debug)]
 pub struct PrereleaseOptions {
     /// Prerelease identifier (e.g., alpha, beta, build, ...)
-    #[clap(default_value = default::PRERELEASE_IDENTIFIER)]
-    pub identifier: String,
+    #[clap()]
+    pub identifier: Option<String>,
 
     /// Template for next version's pre-release
-    #[clap(short, long, default_value = default::PRERELEASE_TEMPLATE)]
-    pub prerelease_template: String,
+    #[clap(short, long)]
+    pub prerelease_template: Option<String>,
 }
 
 #[derive(Args, Debug)]
@@ -134,7 +134,7 @@ pub struct BumpingOptions {
 #[derive(Args, Debug)]
 pub struct BuildMetadataOptions {
     #[clap(short, long, help = format!("Template for build metadata [default: {}]", default::BUILD_METADATA_TEMPLATE))]
-    pub template: Option<String>,
+    pub build_metadata_template: Option<String>,
 }
 
 #[derive(Debug, Args)]

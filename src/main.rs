@@ -71,11 +71,11 @@ fn main() {
                 Some(s) => s,
                 None => &Strategy::Dev(PrereleaseArgs {
                     prerelease_options: PrereleaseOptions {
-                        identifier: default::DEV_IDENTIFIER.to_string(),
-                        prerelease_template: default::DEV_PRERELEASE_TEMPLATE.to_string(),
+                        identifier: Some(default::DEV_IDENTIFIER.to_string()),
+                        prerelease_template: Some(default::DEV_PRERELEASE_TEMPLATE.to_string()),
                     },
                     build_metadata_options: BuildMetadataOptions {
-                        template: Some(default::BUILD_METADATA_TEMPLATE.to_string()),
+                        build_metadata_template: Some(default::BUILD_METADATA_TEMPLATE.to_string()),
                     },
                 }),
             };
