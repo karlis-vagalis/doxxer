@@ -226,15 +226,11 @@ pub fn format_version(
     output_format: &Format,
     output_template: &str,
 ) {
-
     let full_version = output_template.replace("{version}", version.to_string().as_str());
     match output_format {
         Format::Plain => match field {
             None => {
-                println!(
-                    "{}",
-                    full_version
-                );
+                println!("{}", full_version);
             }
             Some(part) => match part {
                 Field::Major => println!("{}", version.major),

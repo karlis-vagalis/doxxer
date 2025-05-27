@@ -14,7 +14,7 @@ use crate::default;
 #[derive(Parser, Debug)]
 #[clap(author, version, styles=get_styles())]
 pub struct Cli {
-    #[clap(short, long, value_name="PATH", help="Path to the Git repository")]
+    #[clap(short, long, value_name = "PATH", help = "Path to the Git repository")]
     pub directory: Option<PathBuf>,
 
     #[clap(

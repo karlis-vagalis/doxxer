@@ -59,7 +59,12 @@ fn main() {
     match &cli.cmd {
         Commands::Current { field } => {
             let version = current_version(&repo, &settings.filter.tag);
-            format_version(field, &version, &settings.output.format, &settings.output.template)
+            format_version(
+                field,
+                &version,
+                &settings.output.format,
+                &settings.output.template,
+            )
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
@@ -75,7 +80,12 @@ fn main() {
                 }),
             };
             let version = next_version(&repo, &settings.filter.tag, strategy);
-            format_version(field, &version, &settings.output.format, &settings.output.template)
+            format_version(
+                field,
+                &version,
+                &settings.output.format,
+                &settings.output.template,
+            )
         }
     }
 }

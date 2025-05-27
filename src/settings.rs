@@ -3,25 +3,29 @@ use std::path::PathBuf;
 use clap::ValueEnum as _;
 use regex::Regex;
 
-use crate::{cli::{Cli, Format, Strategy}, config::Configuration, default};
+use crate::{
+    cli::{Cli, Format, Strategy},
+    config::Configuration,
+    default,
+};
 
 pub struct FilterSettings {
-    pub tag: Regex
+    pub tag: Regex,
 }
 
 pub struct OutputSettings {
     pub format: Format,
-    pub template: String
+    pub template: String,
 }
 
 pub struct Settings {
     pub directory: PathBuf,
     pub filter: FilterSettings,
-    pub output: OutputSettings
+    pub output: OutputSettings,
 }
 
 impl Settings {
-    pub fn merge (cli: &Cli, config: &Configuration) -> Self {
+    pub fn merge(cli: &Cli, config: &Configuration) -> Self {
         let command = match &cli.cmd {
             crate::Commands::Current { .. } => "current",
             crate::Commands::Next { strategy, .. } => match strategy {
@@ -73,12 +77,14 @@ impl Settings {
         Self {
             directory,
             filter: FilterSettings { tag: filter_tag },
-            output: OutputSettings { format: output_format, template: output_template}
+            output: OutputSettings {
+                format: output_format,
+                template: output_template,
+            },
         }
     }
 
     pub fn validate(&self) {
-        
         if !self.output.template.contains("{version}") {
             eprintln!(
                 "Output template \"{}\" is missing required variable {{version}}",
@@ -86,6 +92,5 @@ impl Settings {
             );
             std::process::exit(1);
         }
-        
     }
 }
