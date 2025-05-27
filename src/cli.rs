@@ -59,8 +59,8 @@ pub enum Field {
     Major,
     Minor,
     Patch,
-    Pre,
-    Build,
+    Prerelease,
+    BuildMetadata,
 }
 
 /// Bumping strategy
@@ -127,8 +127,8 @@ pub struct PrereleaseOptions {
 #[derive(Args, Debug)]
 pub struct BumpingOptions {
     /// Bump increment
-    #[clap(short, long, default_value_t = default::INCREMENT)]
-    pub increment: u64,
+    #[clap(short, long)]
+    pub increment: Option<u64>,
 }
 
 #[derive(Args, Debug)]

@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 
 use crate::{
     cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs, StandardBumpArgs},
+    settings::Settings,
     template::TemplateVariables,
     PrereleaseOptions, Strategy,
 };
@@ -120,13 +121,14 @@ fn get_inc(pre: &str, identifier: &str) -> usize {
     }
 }
 
-pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> Version {
-    let latest = current_version(repo, filter);
+pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings) -> Version {
+    let latest = current_version(repo, &settings.filter.tag);
 
-    let latest_tag_name = match find_tag_name_matching_version(repo, &latest.to_string(), filter) {
-        Ok(tag) => tag,
-        Err(_) => None,
-    };
+    let latest_tag_name =
+        match find_tag_name_matching_version(repo, &latest.to_string(), &settings.filter.tag) {
+            Ok(tag) => tag,
+            Err(_) => None,
+        };
     let commit_count = match get_commit_count_since_tag(repo, latest_tag_name.as_deref()) {
         Ok(count) => count,
         Err(_) => 0,
@@ -143,20 +145,17 @@ pub fn next_version(repo: &Repository, filter: &Regex, strategy: &Strategy) -> V
 
     // Set new major/minor/patch versions
     match strategy {
-        Strategy::Major(StandardBumpArgs { bump_options, .. })
-        | Strategy::PreMajor(PreReleaseWithBumpArgs { bump_options, .. }) => {
-            next.major += bump_options.increment;
+        Strategy::Major(_) | Strategy::PreMajor(_) => {
+            next.major += settings.bump.increment;
             next.minor = 0;
             next.patch = 0;
         }
-        Strategy::Minor(StandardBumpArgs { bump_options, .. })
-        | Strategy::PreMinor(PreReleaseWithBumpArgs { bump_options, .. }) => {
-            next.minor += bump_options.increment;
+        Strategy::Minor(_) | Strategy::PreMinor(_) => {
+            next.minor += settings.bump.increment;
             next.patch = 0;
         }
-        Strategy::Patch(StandardBumpArgs { bump_options, .. })
-        | Strategy::PrePatch(PreReleaseWithBumpArgs { bump_options, .. }) => {
-            next.patch += bump_options.increment;
+        Strategy::Patch(_) | Strategy::PrePatch(_) => {
+            next.patch += settings.bump.increment;
         }
         Strategy::Prerelease(_) => {}
         Strategy::Dev(_) => {}
@@ -236,8 +235,8 @@ pub fn format_version(
                 Field::Major => println!("{}", version.major),
                 Field::Minor => println!("{}", version.minor),
                 Field::Patch => println!("{}", version.patch),
-                Field::Pre => println!("{}", version.pre),
-                Field::Build => println!("{}", version.build),
+                Field::Prerelease => println!("{}", version.pre),
+                Field::BuildMetadata => println!("{}", version.build),
             },
         },
         Format::Json => {
@@ -245,8 +244,8 @@ pub fn format_version(
                 Some(Field::Major) => json!({ "major": version.major }),
                 Some(Field::Minor) => json!({ "minor": version.minor }),
                 Some(Field::Patch) => json!({ "patch": version.patch }),
-                Some(Field::Pre) => json!({ "pre": version.pre.as_str() }),
-                Some(Field::Build) => json!({ "build": version.build.as_str() }),
+                Some(Field::Prerelease) => json!({ "pre": version.pre.as_str() }),
+                Some(Field::BuildMetadata) => json!({ "build": version.build.as_str() }),
                 None => {
                     let mut map = serde_json::Map::new();
                     map.insert("major".to_string(), json!(version.major));

@@ -4,7 +4,7 @@ use clap::ValueEnum as _;
 use regex::Regex;
 
 use crate::{
-    cli::{Cli, Format, Strategy},
+    cli::{BumpingOptions, Cli, Format, StandardBumpArgs, Strategy},
     config::Configuration,
     default,
 };
@@ -18,10 +18,15 @@ pub struct OutputSettings {
     pub template: String,
 }
 
+pub struct BumpSettings {
+    pub increment: u64,
+}
+
 pub struct Settings {
     pub directory: PathBuf,
     pub filter: FilterSettings,
     pub output: OutputSettings,
+    pub bump: BumpSettings,
 }
 
 impl Settings {
@@ -74,12 +79,47 @@ impl Settings {
             },
         };
 
+        let mut increment: u64 = default::INCREMENT;
+        match &cli.cmd {
+            crate::cli::Commands::Current { field } => {}
+            crate::cli::Commands::Next { strategy, field } => match strategy {
+                Some(strategy) => match strategy {
+                    Strategy::Major(StandardBumpArgs { bump_options, .. }) => {
+                        increment = Settings::get_increment(config, bump_options, command);
+                    }
+                    Strategy::Minor(StandardBumpArgs { bump_options, .. }) => {
+                        increment = Settings::get_increment(config, bump_options, command);
+                    }
+                    Strategy::Patch(_) => todo!(),
+                    Strategy::Prerelease(_) => todo!(),
+                    Strategy::PreMajor(_) => todo!(),
+                    Strategy::PreMinor(_) => todo!(),
+                    Strategy::PrePatch(_) => todo!(),
+                    Strategy::Dev(_) => todo!(),
+                },
+                None => {}
+            },
+        }
+
         Self {
             directory,
             filter: FilterSettings { tag: filter_tag },
             output: OutputSettings {
                 format: output_format,
                 template: output_template,
+            },
+            bump: BumpSettings {
+                increment: increment,
+            },
+        }
+    }
+
+    fn get_increment(config: &Configuration, bump_options: &BumpingOptions, command: &str) -> u64 {
+        match bump_options.increment {
+            Some(i) => i,
+            None => match config.get::<u64>(command, "increment") {
+                Ok(i) => i,
+                Err(_) => default::INCREMENT,
             },
         }
     }

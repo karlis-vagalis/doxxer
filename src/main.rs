@@ -79,7 +79,7 @@ fn main() {
                     },
                 }),
             };
-            let version = next_version(&repo, &settings.filter.tag, strategy);
+            let version = next_version(&repo, strategy, &settings);
             format_version(
                 field,
                 &version,
