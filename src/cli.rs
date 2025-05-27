@@ -14,7 +14,7 @@ use crate::{config::Configuration, default};
 #[derive(Parser, Debug)]
 #[clap(author, version, styles=get_styles())]
 pub struct Cli {
-    #[clap(short, long, value_name="PATH", help=format!("Path to the Git repository [default: {}]", default::DIRECTORY))]
+    #[clap(short, long, value_name="PATH", help="Path to the Git repository")]
     pub directory: Option<PathBuf>,
 
     #[clap(
@@ -201,7 +201,7 @@ pub struct BuildMetadataOptions {
 #[derive(Debug, Args)]
 #[group(required = false, multiple = false)]
 pub struct FilterOptions {
-    #[clap(short, long, value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
+    #[clap(short, long="tag-filter", value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
     pub tag: Option<String>,
 }
 

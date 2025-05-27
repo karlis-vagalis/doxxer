@@ -15,7 +15,9 @@ pub mod default {
     pub static CONFIG_FILE_NAME: &str = "doxxer";
 
     pub static DIRECTORY: &str = ".";
+
     pub static TAG_FILTER: &str = "";
+
     pub static OUTPUT_TEMPLATE: &str = "{version}";
 
     pub static INCREMENT: u64 = 1;
