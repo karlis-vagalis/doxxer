@@ -8,7 +8,7 @@ use clap::{
     Args, Parser, Subcommand, ValueEnum,
 };
 
-use crate::{config::Configuration, default};
+use crate::default;
 
 /// Dynamic version manager for Git repositories
 #[derive(Parser, Debug)]
@@ -33,67 +33,6 @@ pub struct Cli {
 
     #[command(subcommand)]
     pub cmd: Commands,
-}
-impl Cli {
-    pub fn apply(&mut self, config: Configuration) {
-        let command = match &self.cmd {
-            crate::Commands::Current { .. } => "current",
-            crate::Commands::Next { strategy, .. } => match strategy {
-                Some(Strategy::Major { .. }) => "next.major",
-                Some(Strategy::Minor { .. }) => "next.minor",
-                Some(Strategy::Patch { .. }) => "next.patch",
-                Some(Strategy::Prerelease { .. }) => "next.prerelease",
-                Some(Strategy::PreMajor { .. }) => "next.pre-major",
-                Some(Strategy::PreMinor { .. }) => "next.pre-minor",
-                Some(Strategy::PrePatch { .. }) => "next.pre-patch",
-                Some(Strategy::Dev { .. }) => "next.dev",
-                None => "next",
-            },
-        };
-
-        self.directory = match &self.directory {
-            Some(directory) => Some(directory.clone()),
-            None => match config.get::<String>(command, "directory") {
-                Ok(dir) => Some(PathBuf::from(dir)),
-                Err(_) => Some(PathBuf::from(default::DIRECTORY)),
-            },
-        };
-
-        self.filter.tag = match &self.filter.tag {
-            Some(filter) => Some(filter.clone()),
-            None => match config.get::<String>(command, "filter.tag") {
-                Ok(tag_filter) => Some(tag_filter),
-                Err(_) => Some(default::TAG_FILTER.to_string()),
-            },
-        };
-
-        self.output.format = match &self.output.format {
-            Some(format) => Some(format.clone()),
-            None => match config.get::<String>(command, "output.format") {
-                Ok(format) => Some(Format::from_str(&format, true).unwrap()),
-                Err(_) => Some(Format::Plain),
-            },
-        };
-
-        self.output.template = match &self.output.template {
-            Some(template) => Some(template.clone()),
-            None => match config.get::<String>(command, "output.template") {
-                Ok(template) => Some(template),
-                Err(_) => Some(default::OUTPUT_TEMPLATE.to_string()),
-            },
-        };
-    }
-    pub fn validate(&self) {
-        /*
-        if !self.output_template.contains("{version}") {
-            eprintln!(
-                "Output template \"{}\" is missing required variable {{version}}",
-                self.output_template
-            );
-            std::process::exit(1);
-        }
-         */
-    }
 }
 
 #[derive(Subcommand, Debug)]

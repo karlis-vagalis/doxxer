@@ -1,5 +1,6 @@
 mod cli;
 mod config;
+mod settings;
 mod template;
 mod version;
 
@@ -7,6 +8,7 @@ use clap::Parser;
 
 use cli::{BuildMetadataOptions, Cli, Commands, PrereleaseArgs, PrereleaseOptions, Strategy};
 use config::Configuration;
+use settings::Settings;
 use version::{current_version, format_version, next_version};
 
 use git2::Repository;
@@ -33,7 +35,7 @@ pub mod default {
 }
 
 fn main() {
-    let mut cli = Cli::parse();
+    let cli = Cli::parse();
 
     let config = match &cli.config {
         Some(config_path) => Configuration::load(Some(config_path)),
@@ -42,27 +44,11 @@ fn main() {
             None => Configuration::load(None),
         },
     };
-    cli.apply(config);
-    cli.validate();
 
-    let directory = match &cli.directory {
-        Some(d) => d,
-        None => todo!(),
-    };
-    let tag_filter = match &cli.filter.tag {
-        Some(f) => regex::Regex::new(f).unwrap(),
-        None => todo!(),
-    };
-    let output_format = match &cli.output.format {
-        Some(f) => f,
-        None => todo!(),
-    };
-    let output_template = match &cli.output.template {
-        Some(t) => t,
-        None => todo!(),
-    };
+    let settings = Settings::merge(&cli, &config);
+    settings.validate();
 
-    let repo = match Repository::open(&directory) {
+    let repo = match Repository::open(&settings.directory) {
         Ok(repo) => repo,
         Err(e) => {
             eprintln!("Issue opening repository: {}!", e.message());
@@ -72,8 +58,8 @@ fn main() {
 
     match &cli.cmd {
         Commands::Current { field } => {
-            let version = current_version(&repo, &tag_filter);
-            format_version(field, &version, &output_format, &output_template)
+            let version = current_version(&repo, &settings.filter.tag);
+            format_version(field, &version, &settings.output.format, &settings.output.template)
         }
         Commands::Next { field, strategy } => {
             let strategy = match strategy {
@@ -88,8 +74,8 @@ fn main() {
                     },
                 }),
             };
-            let version = next_version(&repo, &tag_filter, strategy);
-            format_version(field, &version, &output_format, &output_template)
+            let version = next_version(&repo, &settings.filter.tag, strategy);
+            format_version(field, &version, &settings.output.format, &settings.output.template)
         }
     }
 }
