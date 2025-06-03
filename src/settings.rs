@@ -245,9 +245,6 @@ impl Settings {
                 }
             },
         }
-
-        dbg!(&command, &prerelease_identifier, &prerelease_template);
-
         Self {
             directory,
             filter: FilterSettings { tag: filter_tag },

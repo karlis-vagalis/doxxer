@@ -1,13 +1,14 @@
-✨**doxxer**✨ is an extremely configurable CLI tool written in *Rust* that
+✨**doxxer**✨ is a highly configurable CLI tool written in *Rust* that
 simplifies and automates dynamic [SemVer](https://semver.org/) versioning by
 leveraging the latest Git tags and commits.
 
-It includes tag filtering, output version prefexes, many version bumping mechanisms
-and is the perfect tool to generate dynamic version on the fly. No more project 
-programming language specific solution to handle this!
+It includes tag filtering, templating mechanisms, different output formats, many
+version bumping mechanisms and is the perfect tool to generate dynamic version
+on the fly. No more project programming language specific solution to get the
+version of the software your are developing!
 
 This approach was heavily inspired by the output produced by the native
-`git decribe --tags`, which was my own de-facto soltuin for dynamic versioning of
+`git decribe --tags`, which was my own de-facto solution for dynamic versioning of
 software projects.
 
 ![image info](./docs/demo.gif)
@@ -22,6 +23,12 @@ You can currenly install the tool locally via *cargo*:
 cargo install doxxer
 ```
 
+or downloading latest binary from [GitHub Release](https://github.com/karlis-vagalis/doxxer/releases) page.
+
+## Configuration
+
+The tool supports
+
 ## Usage
 
 The tool has 2 main commands to work with your repository: `current` and `next`.
@@ -31,26 +38,27 @@ doxxer help
 ```
 
 ```bash
-Dynamic version manager for Git
+Dynamic version manager for Git repositories
 
 Usage: doxxer [OPTIONS] <COMMAND>
 
 Commands:
   current  Get current version
   next     Get next version
-           If no strategy is provided, falls back to dynamic version template "{pre}.{identifier}.{distance}" with "identifier=dev"
   help     Print this message or the help of the given subcommand(s)
 
 Options:
-  -d, --directory <DIRECTORY>  Path to the Git repository [default: .]
-  -h, --help                   Print help
-  -V, --version                Print version
+  -d, --directory <PATH>  Path to the Git repository
+  -c, --config <PATH>     Path to the config file or directory
+  -h, --help              Print help
+  -V, --version           Print version
 
 Filter options:
-  -f, --filter-prefix <FILTER_PREFIX>  Prefix of the tags used for current version detection [default: v]
+  -t, --tag-filter <REGEX>  Regular expression for selecting relevant tags [default: ]
 
 Output options:
-  -o, --output-prefix <OUTPUT_PREFIX>  Add prefix to the output version [default: v]
+  -f, --format <FORMAT>      Output format [default: plain] [possible values: plain, json]
+  -o, --template <TEMPLATE>  Template for resulting version [default: {version}]
 ```
 
 ## Current version
@@ -66,7 +74,7 @@ Get current version
 Usage: doxxer current [OPTIONS]
 
 Options:
-  -f, --field <FIELD>  Field/part of the version [possible values: major, minor, patch, pre, build]
+  -f, --field <FIELD>  Field/part of the version [possible values: major, minor, patch, prerelease, build-metadata]
   -h, --help           Print help
 ```
 
@@ -78,7 +86,6 @@ doxxer next --help
 
 ```bash
 Get next version
-If no strategy is provided, falls back to dynamic version template "{pre}.{identifier}.{distance}" with "identifier=dev"
 
 Usage: doxxer next [OPTIONS] [STRATEGY]
 
@@ -90,16 +97,25 @@ Bumping strategy:
   pre-major   Major + pre-release version
   pre-minor   Minor + pre-release version
   pre-patch   Patch + pre-release version
+  dev         Development version (non-standard)
   help        Print this message or the help of the given subcommand(s)
 
 Options:
-  -f, --field <FIELD>  Field/part of the version [possible values: major, minor, patch, pre, build]
+  -f, --field <FIELD>  Field/part of the version [possible values: major, minor, patch, prerelease, build-metadata]
   -h, --help           Print help
 ```
 
-Default behaviour of the `next` command is ideal for generating development versions dynamically, as it appends `dev.{distance}+{hash}` to the latest version.
+Default behaviour/strategy of the `next` command is `dev` ideal for generating development versions dynamically.
 
 ## Template variables
+
+### `output.template`
+
+| Variable | Description |
+|--|--|
+| `{version}` | SemVer string. Required |
+
+### `template` (prerelease & build metadata)
 
 | Variable | Description |
 |--|--|

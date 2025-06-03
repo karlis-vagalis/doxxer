@@ -20,7 +20,6 @@ impl TemplateVariables {
     pub fn inject(&self, template: &str) -> String {
         let mut template = String::from(template);
         for (field, value) in self.fields() {
-            //dbg!(&field, &value);
             template = template.replace(field, value.as_str());
             template = match template.strip_prefix(".") {
                 Some(s) => s.to_string(),
@@ -31,8 +30,6 @@ impl TemplateVariables {
                 None => template,
             };
         }
-
-        //dbg!(&template);
         template
     }
 }
