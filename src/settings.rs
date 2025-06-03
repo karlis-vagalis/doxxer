@@ -282,7 +282,7 @@ impl Settings {
     ) -> String {
         match &prerelease_options.identifier {
             Some(s) => s.clone(),
-            None => match config.get::<String>(command, "identifier") {
+            None => match config.get::<String>(command, "prerelease.identifier") {
                 Ok(s) => s,
                 Err(_) => {
                     if command == "next.dev" {
@@ -302,7 +302,7 @@ impl Settings {
     ) -> String {
         match &prerelease_options.prerelease_template {
             Some(s) => s.clone(),
-            None => match config.get::<String>(command, "template") {
+            None => match config.get::<String>(command, "prerelease.template") {
                 Ok(s) => s,
                 Err(_) => {
                     if command == "next.dev" {
@@ -322,7 +322,7 @@ impl Settings {
     ) -> String {
         match &build_metadata_options.build_metadata_template {
             Some(s) => s.clone(),
-            None => match config.get::<String>(command, "template") {
+            None => match config.get::<String>(command, "build_metadata.template") {
                 Ok(s) => s,
                 Err(_) => {
                     if command == "next.dev" {
