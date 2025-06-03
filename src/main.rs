@@ -27,7 +27,8 @@ pub mod default {
     pub static PRERELEASE_IDENTIFIER: &str = "build";
     pub static DEV_PRERELEASE_IDENTIFIER: &str = "dev";
 
-    pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
+    pub static PRERELEASE_TEMPLATE: &str = "";
+    pub static REL_PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
     pub static DEV_PRERELEASE_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
 
     pub static BUILD_METADATA_TEMPLATE: &str = "";

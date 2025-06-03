@@ -307,8 +307,13 @@ impl Settings {
                 Err(_) => {
                     if command == "next.dev" {
                         default::DEV_PRERELEASE_TEMPLATE.to_string()
-                    } else {
+                    } else if command == "next.major"
+                        || command == "next.minor"
+                        || command == "next.patch"
+                    {
                         default::PRERELEASE_TEMPLATE.to_string()
+                    } else {
+                        default::REL_PRERELEASE_TEMPLATE.to_string()
                     }
                 }
             },
