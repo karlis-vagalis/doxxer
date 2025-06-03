@@ -1,15 +1,8 @@
-✨**doxxer**✨ is a highly configurable CLI tool written in *Rust* that
-simplifies and automates dynamic [SemVer](https://semver.org/) versioning by
-leveraging the latest Git tags and commits.
+✨**doxxer**✨ is your secret weapon for taming software versions! This highly configurable CLI tool, written in *Rust*, automates dynamic [SemVer](https://semver.org/) versioning by using your latest Git tags and commit history.
 
-It includes tag filtering, templating mechanisms, different output formats, many
-version bumping mechanisms and is the perfect tool to generate dynamic version
-on the fly. No more project programming language specific solution to get the
-version of the software your are developing!
+No more manual versioning headaches and inconsistent version numbers scattered across different projects and programming languages. `doxxer` streamlines this process, ensuring your versions and release tags are always accurate and consistent.
 
-This approach was heavily inspired by the output produced by the native
-`git decribe --tags`, which was my own de-facto solution for dynamic versioning of
-software projects.
+Inspired by the utility of `git describe --tags`, it offers robust features like tag filtering, powerful templating for custom version formats, various version bumping strategies, and multiple output options.
 
 ![image info](./docs/demo.gif)
 
@@ -17,7 +10,7 @@ software projects.
 
 ## Getting started
 
-You can currenly install the tool locally via *cargo*:
+You can currently install the tool locally via *cargo*:
 
 ```bash
 cargo install doxxer
@@ -31,25 +24,37 @@ or downloading latest binary from [GitHub Release](https://github.com/karlis-vag
 
 ### Configuration Priority
 
-Settings are applied in the following order of precedence (highest to lowest):
+`doxxer` loads settings in layers. Each subsequent layer can override the settings defined in the previous ones. The order of loading and precedence (from lowest to highest) is as follows:
 
-1.  **Command-line Arguments:** Options passed directly when running `doxxer` (e.g., `--output json`). These override all other settings.
-2.  **Environment Variables:** Variables prefixed with `DOXXER_` (e.g., `DOXXER_OUTPUT__FORMAT=json`).
-3.  **Configuration Files:** Settings defined in `doxxer.toml` or `.doxxer.toml` files.
-4.  **Default Values:** Built-in defaults if no other configuration is provided.
+1.  **Default Values:** These are the built-in defaults for all settings. This is the base layer.
+2.  **Configuration Files in Current Working Directory (CWD):** `doxxer` automatically loads `.doxxer.toml` and then `doxxer.toml` (if they exist) from the current working directory. Settings in `doxxer.toml` override those in `.doxxer.toml` if both are present and define the same key. These files act as a foundational layer of customization.
+3.  **Specified Configuration File or Directory:**
+    *   If a specific configuration file is provided via `--config <path_to_file>`, it's loaded, and its settings override those from the CWD files.
+    *   If a directory is provided via `--config <path_to_dir>` or `--directory <path_to_repo_dir>` (and no specific file was given with `--config`), `doxxer` looks for `.doxxer.toml` then `doxxer.toml` within that directory. Found settings override the CWD layer. If both `--config <dir>` and `--directory <dir>` are provided, the path from `--config` is preferred.
+4.  **Environment Variables:** Variables prefixed with `DOXXER_` (e.g., `DOXXER_OUTPUT__FORMAT=json`) are loaded next. These will override any settings from configuration files or defaults.
+5.  **Command-line Arguments:** Options passed directly when running `doxxer` (e.g., `--output json` or `-f json`). These have the highest precedence and override all other settings.
+
+Essentially, `doxxer` starts with defaults, then applies settings from CWD config files, then from a more specific config file/directory (if specified), then environment variables, and finally, CLI arguments make the ultimate decision.
 
 ### Configuration Files
 
-`doxxer` can be configured using a TOML file named `doxxer.toml` or `.doxxer.toml`.
+`doxxer` can be configured using TOML files, typically named `doxxer.toml` or `.doxxer.toml`.
 
-**Search Order:**
+**Loading and Search Order:**
 
-*   If a path is provided via the `-c, --config <PATH>` CLI option:
-    *   If `<PATH>` is a file, it's loaded directly.
-    *   If `<PATH>` is a directory, `doxxer` looks for `.doxxer.toml` then `doxxer.toml` within that directory.
-*   If no `--config` path is given:
-    *   If a `--directory <PATH>` (for the Git repo) is provided, `doxxer` looks in that directory first (for `.doxxer.toml` then `doxxer.toml`).
-    *   Finally, it looks in the current working directory (for `.doxxer.toml` then `doxxer.toml`).
+1.  **Current Working Directory (CWD) Scan:** `doxxer` always first attempts to load configuration from files named `.doxxer.toml` and then `doxxer.toml` located in the current working directory where `doxxer` is executed. If both exist, settings from `doxxer.toml` will take precedence over `.doxxer.toml` for any overlapping keys. These serve as a base configuration.
+2.  **Specified Configuration (`--config <PATH>`):**
+    *   If `<PATH>` is a **file** (e.g., `--config /path/to/myconfig.toml`), this specific file is loaded. Its settings override any found in the CWD configuration files.
+    *   If `<PATH>` is a **directory** (e.g., `--config /path/to/confdir/`), `doxxer` looks for `.doxxer.toml` and then `doxxer.toml` within this directory. Settings from a found file (again, `doxxer.toml` preferred over `.doxxer.toml`) override the CWD configuration.
+3.  **Repository Directory (`--directory <PATH>` as fallback for config):**
+    *   If the `--config <PATH>` option is **not** used to specify a file, and a `--directory <PATH>` (for the Git repository) is provided and is different from the CWD, `doxxer` will search for `.doxxer.toml` and then `doxxer.toml` within this repository directory.
+    *   Settings from a file found here will override the CWD configuration. This allows for project-specific configurations located with the repository itself, if not explicitly pointed to by `--config`.
+    *   If `--config` specifies a directory, this step is effectively covered by point 2.
+
+**Key Points for Config Files:**
+*   Within a directory, `doxxer.toml` values take precedence over `.doxxer.toml` if both files exist and define the same settings.
+*   Configuration files loaded via `--config` (either a direct file or files within a specified directory) take precedence over files found in the CWD or via `--directory`.
+*   All loaded configurations are merged, with higher precedence sources (as listed in "Configuration Priority") overriding lower ones.
 
 **Structure:**
 
@@ -74,9 +79,9 @@ Configuration settings can be global or command-specific.
     # Override output format specifically for the 'current' command
     output.format = "plain"
 
-    [next]
-    # Default settings for all 'next' strategies
-    prerelease.identifier = "beta"
+    # Example:
+    # [next.minor]
+    # prerelease.identifier = "beta" # Sets "beta" for "doxxer next minor" strategy
 
     [next.major]
     # Settings specific to 'doxxer next major'
@@ -108,38 +113,39 @@ You can configure `doxxer` using environment variables.
 
 ### Configuration Options Table
 
-The following table summarizes all available configuration options, their corresponding CLI flags, configuration file keys, environment variables, and default values.
+The following table summarizes all available configuration options, their corresponding CLI flags, configuration file keys (within `doxxer.toml` or `.doxxer.toml`), environment variables, and default values.
 
-| Purpose                                    | Option Name                  | CLI Flag(s)                     | Config File Key                      | Environment Variable                      | Default Value                                  |
-| ------------------------------------------ | ---------------------------- | ------------------------------- | ------------------------------------ | ----------------------------------------- | ---------------------------------------------- |
-| **Global Options**                         |                              |                                 |                                      |                                           |                                                |
-| Path to the Git repository                 | `directory`                  | `-d, --directory <PATH>`        | `directory`                          | `DOXXER_DIRECTORY`                        | `.` (current directory)                        |
-| Path to config file or directory           | `config`                     | `-c, --config <PATH>`           | N/A (CLI only)                       | N/A (CLI only)                            | (none)                                         |
-| Regex to filter relevant Git tags          | `filter.tag`                 | `-t, --tag-filter <REGEX>`      | `filter.tag`                         | `DOXXER_FILTER__TAG`                      | `""` (empty string, no filter)                 |
-| Output format for the version              | `output.format`              | `-f, --format <FORMAT>`         | `output.format`                      | `DOXXER_OUTPUT__FORMAT`                   | `plain`                                        |
-| Template for the resulting version string  | `output.template`            | `-o, --template <TEMPLATE>`     | `output.template`                    | `DOXXER_OUTPUT__TEMPLATE`                 | `{version}`                                    |
-| **Command: `current` & `next`**            |                              |                                 |                                      |                                           |                                                |
-| Field/part of the version to output        | `field`                      | `-F, --field <FIELD>`           | N/A (CLI only)                       | N/A (CLI only)                            | (outputs full version)                         |
-| **Command: `next` (General)**              |                              |                                 | `[next]`                             | `DOXXER_NEXT`                             |                                                |
-| Default prerelease identifier              | `prerelease.identifier`      |                                 | `next.prerelease.identifier`         | `DOXXER_NEXT__PRERELEASE__IDENTIFIER`     | `build`                                        |
-| Default prerelease template                | `prerelease.template`        |                                 | `next.prerelease.template`           | `DOXXER_NEXT__PRERELEASE__TEMPLATE`       | `{identifier}.{inc}`                           |
-| Default build metadata template            | `build_metadata.template`    |                                 | `next.build_metadata.template`       | `DOXXER_NEXT__BUILD_METADATA__TEMPLATE`   | `""` (empty string)                            |
-| **Strategy: `major`, `minor`, `patch`**    |                              |                                 | `[next.major]`, etc.                 | `DOXXER_NEXT__MAJOR`, etc.                |                                                |
-| Version bump increment                     | `increment`                  | `--increment <NUM>`             | `next.<strategy>.increment`          | `DOXXER_NEXT__<STRATEGY>__INCREMENT`      | `1`                                            |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `next.<strategy>.build_metadata.template` | `DOXXER_NEXT__<STRATEGY>__BUILD_METADATA__TEMPLATE` | `""` (empty string)                            |
-| **Strategy: `prerelease`**                 |                              |                                 | `[next.prerelease]`                  | `DOXXER_NEXT__PRERELEASE`                 |                                                |
-| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `next.prerelease.identifier`         | `DOXXER_NEXT__PRERELEASE__IDENTIFIER`     | `build`                                        |
-| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `next.prerelease.template`           | `DOXXER_NEXT__PRERELEASE__PRERELEASE_TEMPLATE` | `{identifier}.{inc}`                           |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `next.prerelease.build_metadata.template` | `DOXXER_NEXT__PRERELEASE__BUILD_METADATA__TEMPLATE` | `""` (empty string)                            |
-| **Strategy: `premajor`, `preminor`, `prepatch`** |                        |                                 | `[next.premajor]`, etc.              | `DOXXER_NEXT__PREMAJOR`, etc.             |                                                |
-| Version bump increment                     | `increment`                  | `--increment <NUM>`             | `next.<strategy>.increment`          | `DOXXER_NEXT__<STRATEGY>__INCREMENT`      | `1`                                            |
-| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `next.<strategy>.identifier`         | `DOXXER_NEXT__<STRATEGY>__IDENTIFIER`     | `build`                                        |
-| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `next.<strategy>.prerelease_template`| `DOXXER_NEXT__<STRATEGY>__PRERELEASE_TEMPLATE` | `{identifier}.{inc}`                           |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `next.<strategy>.build_metadata.template` | `DOXXER_NEXT__<STRATEGY>__BUILD_METADATA__TEMPLATE` | `""` (empty string)                            |
-| **Strategy: `dev`**                        |                              |                                 | `[next.dev]`                         | `DOXXER_NEXT__DEV`                        |                                                |
-| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `next.dev.identifier`                | `DOXXER_NEXT__DEV__IDENTIFIER`            | `dev`                                          |
-| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `next.dev.template`                  | `DOXXER_NEXT__DEV__PRERELEASE_TEMPLATE`   | `{pre}.{identifier}.{distance}`                |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `next.dev.build_metadata.template`   | `DOXXER_NEXT__DEV__BUILD_METADATA__TEMPLATE` | `{hash}`                                       |
+| Purpose                                    | Option Name (Conceptual)     | CLI Flag(s) / Arg              | Config File Key (`[table].key`)                | Environment Variable (`DOXXER_...`)             | Default Value                                     |
+| ------------------------------------------ | ---------------------------- | ------------------------------- | ---------------------------------------------- | ----------------------------------------------- | ------------------------------------------------- |
+| **Global Options**                         |                              |                                 |                                                |                                                 |                                                   |
+| Path to the Git repository                 | `directory`                  | `-d, --directory <PATH>`        | `directory`                                    | `DOXXER_DIRECTORY`                              | `.` (current directory)                           |
+| Path to config file or directory           | `config_path`                | `-c, --config <PATH>`           | N/A (CLI only)                                 | N/A (CLI only)                                  | (none)                                            |
+| Regex to filter relevant Git tags          | `filter.tag`                 | `-t, --tag-filter <REGEX>`      | `filter.tag`                                   | `DOXXER_FILTER__TAG`                            | `""` (empty string, no filter)                    |
+| Output format for the version              | `output.format`              | `-f, --format <FORMAT>`         | `output.format`                                | `DOXXER_OUTPUT__FORMAT`                         | `plain`                                           |
+| Template for the resulting version string  | `output.template`            | `-o, --template <TEMPLATE>`     | `output.template`                              | `DOXXER_OUTPUT__TEMPLATE`                       | `{version}`                                       |
+| **Command: `current` & `next`**            |                              |                                 |                                                |                                                 |                                                   |
+| Field/part of the version to output        | `field`                      | `-F, --field <FIELD>`           | N/A (CLI only)                                 | N/A (CLI only)                                  | (outputs full version)                            |
+| **Strategy: `major`, `minor`, `patch`**    |                              |                                 | `[next.major]`, `[next.minor]`, `[next.patch]` | `DOXXER_NEXT__MAJOR__...`, etc.                 |                                                   |
+| Version bump increment                     | `increment`                  | `--increment <NUM>`             | `increment`                                    | `...INCREMENT`                                  | `1`                                               |
+| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `""` (empty string)                               |
+| **Strategy: `prerelease`**                 |                              |                                 | `[next.prerelease]`                            | `DOXXER_NEXT__PRERELEASE__...`                  |                                                   |
+| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `prerelease.identifier`                        | `...IDENTIFIER`                                 | `build`                                           |
+| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `prerelease.template`                        | `...PRERELEASE_TEMPLATE`                        | `{identifier}.{inc}`                              |
+| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `""` (empty string)                               |
+| **Strategy: `premajor`, `preminor`, `prepatch`** |                        |                                 | `[next.premajor]`, etc.                        | `DOXXER_NEXT__PREMAJOR__...`, etc.              |                                                   |
+| Version bump increment                     | `increment`                  | `--increment <NUM>`             | `increment`                                    | `...INCREMENT`                                  | `1`                                               |
+| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `prerelease.identifier`                        | `...IDENTIFIER`                                 | `build`                                           |
+| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `prerelease.template`                        | `...PRERELEASE_TEMPLATE`                        | `{identifier}.{inc}`                              |
+| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `""` (empty string)                               |
+| **Strategy: `dev`**                        |                              |                                 | `[next.dev]`                                   | `DOXXER_NEXT__DEV__...`                         |                                                   |
+| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `prerelease.identifier`                        | `...IDENTIFIER`                                 | `dev`                                             |
+| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `prerelease.template`                        | `...PRERELEASE_TEMPLATE`                        | `{pre}.{identifier}.{distance}`                   |
+| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `{hash}`                                          |
+
+**Notes on Config File Keys & Environment Variables for Strategies:**
+*   For strategies like `major`, `minor`, `patch`, `premajor`, `preminor`, `prepatch`, `prerelease`, and `dev`, the `Config File Key` shown is relative to the strategy's table in `doxxer.toml`. For example, for the `major` strategy, `increment` is specified as `increment = 1` under the `[next.major]` table.
+*   The `Environment Variable` column for strategies uses `...` as a placeholder for the capitalized strategy name part. For example, for `increment` under the `major` strategy, the variable would be `DOXXER_NEXT__MAJOR__INCREMENT`. For `identifier` under the `dev` strategy, it would be `DOXXER_NEXT__DEV__IDENTIFIER`.
+*   CLI flags like `--increment`, `--prerelease-template`, and `--build-metadata-template` are available for the specific `next` strategies that support them. Clap auto-generates short versions of flags (e.g., `-i` for `--increment`) if they don't conflict; refer to `doxxer next <STRATEGY> --help` for the exact short flags.
 
 ## Usage
 
@@ -308,6 +314,7 @@ This template defines the format of the build metadata part of the version (e.g.
 ## Usage Examples
 
 This section provides practical examples of how to use `doxxer` with different configurations.
+(Note: `<hash>` in outputs refers to a short commit hash like `a1b2c3d`.)
 
 ### 1. Using a `doxxer.toml` Configuration File
 
@@ -316,78 +323,120 @@ Create a `doxxer.toml` file in your project's root directory:
 ```toml
 # Global settings
 directory = "."
-tag_filter = "^v\d+\.\d+\.\d+$" # Match tags like v1.0.0
+tag_filter = "^v(\\d+\\.\\d+\\.\\d+)$" # Match tags like v1.0.0, capturing the SemVer part
 
 [output]
 format = "json" # Always output in JSON format
-template = "version: {version}"
-
-[next]
-# Default prerelease identifier for all 'next' commands that generate prereleases
-prerelease.identifier = "beta"
-prerelease.template = "{identifier}.{inc}" # e.g., beta.1
+template = "version: {version}" # Custom output string
 
 [next.patch]
 # Specific settings for 'doxxer next patch'
-increment = 5 # Increment patch version by 5
-prerelease.identifier = "rc" # Release candidates for patches
+increment = 5
+prerelease.identifier = "rc"
+prerelease.template = "{identifier}.{inc}" # e.g. rc.1
 build_metadata.template = "stable.{hash}"
 
 [next.dev]
-prerelease.template = "dev.{distance}.{hash}" # Custom dev version format
+# Specific settings for 'doxxer next dev'
+prerelease.identifier = "dev" # Optional, "dev" is the default for dev strategy
+prerelease.template = "{identifier}.{distance}.{hash}" # e.g. dev.3.a1b2c3d
+build_metadata.template = "" # No build metadata for this dev version format
 ```
 
-**With this `doxxer.toml` in place:**
+**With this `doxxer.toml` in place (assuming latest tag matching filter is `v1.2.3`):**
 
-*   `doxxer current`: Outputs current version in JSON, like `{"version": "version: v1.2.3"}` (assuming `v1.2.3` is the latest tag matching the filter).
-*   `doxxer next patch`: If current is `v1.2.3`, calculates `v1.2.8-rc.1+stable.<hash>` (patch increments by 5, uses 'rc' identifier). Output is JSON.
-*   `doxxer next minor`: If current is `v1.2.3`, calculates `v1.3.0-beta.1`. Output is JSON. (Uses default `next.prerelease.identifier` 'beta').
-*   `doxxer next dev`: If current is `v1.2.3` and there are 3 commits since the tag, calculates `v1.2.3-dev.3.<hash>`. Output is JSON.
+*   `doxxer current`:
+    Outputs current version (1.2.3) in JSON with the custom template.
+    ```json
+    {
+      "version": "version: 1.2.3"
+    }
+    ```
+
+*   `doxxer next patch`:
+    If current is `1.2.3`, calculates `1.2.8-rc.1+stable.<hash>`. Output is JSON.
+    ```json
+    {
+      "version": "version: 1.2.8-rc.1+stable.<hash>"
+    }
+    ```
+    *(Explanation: Patch increments by 5 from `[next.patch]`. Prerelease uses "rc" identifier and "{identifier}.{inc}" template. Build metadata uses "stable.{hash}" template.)*
+
+*   `doxxer next minor`:
+    If current is `1.2.3`, calculates `1.3.0-build.1`. Output is JSON.
+    ```json
+    {
+      "version": "version: 1.3.0-build.1"
+    }
+    ```
+    *(Explanation: No specific `[next.minor]` config. Uses default increment 1. Default prerelease identifier for non-dev strategies is "build". Default prerelease template is "{identifier}.{inc}". Default build metadata is empty.)*
+
+*   `doxxer next dev` (assuming 3 commits since `v1.2.3`):
+    If current is `1.2.3`, calculates `1.2.3-dev.3.<hash>`. Output is JSON.
+    ```json
+    {
+      "version": "version: 1.2.3-dev.3.<hash>"
+    }
+    ```
+    *(Explanation: Uses settings from `[next.dev]`. `prerelease.template` is "{identifier}.{distance}.{hash}". `build_metadata.template` is explicitly empty.)*
 
 ### 2. Overriding Settings with CLI Arguments
 
-Even with a `doxxer.toml`, CLI arguments take precedence.
+CLI arguments take precedence over `doxxer.toml` settings.
 
-*   **Override output format to plain text:**
+*   **Override output format to plain text (using `doxxer.toml` from Example 1):**
     ```bash
     doxxer current -f plain
     ```
-    *(Output: `version: v1.2.3`)*
+    Output: `version: 1.2.3`
 
-*   **Override increment for `next patch` for this run only:**
+*   **Override increment for `next patch` (using `doxxer.toml` from Example 1):**
+    If current is `1.2.3`, `doxxer.toml` would make `next patch` result in `1.2.8-rc.1+stable.<hash>`.
     ```bash
     doxxer next patch --increment 1
     ```
-    *(If current is `v1.2.3` and `doxxer.toml` from above is used, this would result in `v1.2.4-rc.1+stable.<hash>` instead of `v1.2.8-rc.1+stable.<hash>`)*
+    This command would result in `1.2.4-rc.1+stable.<hash>` (patch version is `1.2.3` + 1 = `1.2.4`). Output in JSON as per `doxxer.toml`.
 
-*   **Specify a different prerelease identifier for `next major`:**
+*   **Specify a full prerelease version for `next major` (current `1.2.3`):**
+    This creates a "premajor" version.
     ```bash
-    doxxer next major --identifier alpha --prerelease-template "{identifier}.{inc}.{hash}"
+    doxxer next premajor --identifier alpha --prerelease-template "{identifier}.{inc}.{hash}"
     ```
-    *(If current is `v1.2.3`, this might give `v2.0.0-alpha.1.<hash>`)*
+    This might give `2.0.0-alpha.1.<hash>`. Output in plain text by default if no config file sets otherwise.
 
 ### 3. Using Environment Variables
 
 Configure `doxxer` without a config file, using environment variables.
 
-*   **Set global output format and next major increment:**
+*   **Set global output format and `next major` increment:**
     ```bash
     export DOXXER_OUTPUT__FORMAT=json
     export DOXXER_NEXT__MAJOR__INCREMENT=2
+    # Assuming latest tag is v1.2.3
     doxxer next major
     ```
-    *(If current is `v1.2.3`, this would calculate `v3.0.0` and output it in JSON format.)*
+    This would calculate `3.0.0` (major +2, minor/patch reset) and output it in JSON format.
+    ```json
+    {
+      "major": 3,
+      "minor": 0,
+      "patch": 0,
+      "full": "3.0.0"
+    }
+    ```
+    *(Note: Default output template is `{version}`. If `DOXXER_OUTPUT__TEMPLATE` was also set, it would be used.)*
 
 *   **Set a specific prerelease identifier and template for the `dev` strategy:**
     ```bash
-    export DOXXER_NEXT__DEV__IDENTIFIER="snapshot"
-    export DOXXER_NEXT__DEV__PRERELEASE_TEMPLATE="{identifier}.{timestamp}" # Assuming {timestamp} was a feature
-    # Note: {timestamp} is not a real variable. This is for illustration of env var usage.
-    # Use a real template like: export DOXXER_NEXT__DEV__PRERELEASE_TEMPLATE="{identifier}.{distance}"
+    export DOXXER_NEXT__DEV__PRERELEASE_IDENTIFIER="snapshot"
+    export DOXXER_NEXT__DEV__PRERELEASE_TEMPLATE="{identifier}.{distance}"
+    # Assuming latest tag v1.2.3, 5 commits since tag
     doxxer next dev
     ```
+    This would result in `1.2.3-snapshot.5+{hash}` (default build metadata for dev is `{hash}`).
+    To also customize build metadata: `export DOXXER_NEXT__DEV__BUILD_METADATA_TEMPLATE="build.{hash}"`
 
-### 4. Common Use Cases
+### 4. Common Use Cases & Specific Scenarios
 
 *   **Always output JSON:**
     *   In `doxxer.toml`:
@@ -398,31 +447,82 @@ Configure `doxxer` without a config file, using environment variables.
     *   Or with env var: `export DOXXER_OUTPUT__FORMAT=json`
     *   Or CLI: `doxxer <command> --format json`
 
-*   **Set a global prerelease identifier (e.g., "ga", "prod") for non-dev bumps:**
-    *   In `doxxer.toml`:
-        ```toml
-        [next.prerelease] # Affects 'prerelease' strategy directly
-        identifier = "ga"
+*   **Get only the major version number:**
+    ```bash
+    doxxer current --field major
+    ```
+    Output (assuming current version 1.2.3): `1`
 
-        [next.premajor]   # Affects 'premajor' strategy
-        identifier = "ga"
+*   **Generate `next patch` version relying on defaults:**
+    If no `doxxer.toml` exists or it has no `[next.patch]` section:
+    ```bash
+    # Assuming latest tag v1.2.3
+    doxxer next patch
+    ```
+    Output (plain text): `1.2.4`
+    *(Default increment is 1. Default prerelease/build for plain patch bump are empty.)*
 
-        [next.preminor]
-        identifier = "ga"
+*   **Customizing prerelease identifier for multiple strategies (e.g., for release candidates):**
+    To use "rc" for all prerelease types except `dev`:
+    ```toml
+    # In doxxer.toml
+    [next.prerelease]
+    identifier = "rc"
+    # prerelease_template = "{identifier}.{inc}" # This is the default
 
-        [next.prepatch]
-        identifier = "ga"
-        ```
-    *   *Note: You might need to set it for each strategy if you want a truly global override for all bump-plus-prerelease types, as `next.prerelease.identifier` from the general `[next]` section is a fallback.*
+    [next.prepatch]
+    identifier = "rc"
+
+    [next.preminor]
+    identifier = "rc"
+
+    [next.premajor]
+    identifier = "rc"
+    ```
+    This ensures `doxxer next prepatch`, `doxxer next preminor`, etc., will use `rc.1`, `rc.2`, etc.
 
 *   **Generate `dev` versions like `1.2.3-dev.5+commit.abcdef`:**
     *   In `doxxer.toml`:
         ```toml
         [next.dev]
+        # identifier = "dev" # This is the default for dev strategy
         prerelease_template = "dev.{distance}"
         build_metadata_template = "commit.{hash}"
         ```
-    *   Then run: `doxxer next dev`
+    *   Then run: `doxxer next dev` (assuming current `1.2.3`, 5 commits since tag)
+    *   Output: `1.2.3-dev.5+commit.<hash>`
+
+### 5. Using a `.doxxer.toml` for Project Defaults
+
+If you have a `.doxxer.toml` in your project's root (current working directory):
+```toml
+# .doxxer.toml
+[output]
+template = "ProjX-{version}"
+
+[next.patch]
+increment = 2
+prerelease.identifier = "alpha"
+```
+And you run `doxxer next patch` (assuming current `1.0.0`):
+*   It will calculate `1.0.2-alpha.1`.
+*   The output will be `ProjX-1.0.2-alpha.1` (plain text by default).
+
+If you then have a specific `doxxer.toml` (e.g., for CI) in a subdirectory `conf/ci.toml`:
+```toml
+# conf/ci.toml
+[output]
+format = "json"
+template = "{version}" # Override project's output template
+
+[next.patch]
+# Inherits increment = 2 from .doxxer.toml if not overridden
+prerelease.identifier = "rc" # Override prerelease identifier
+```
+Running `doxxer --config conf/ci.toml next patch` (current `1.0.0`):
+*   It will calculate `1.0.2-rc.1`. (Increment 2 from `.doxxer.toml`, 'rc' from `ci.toml`).
+*   Output will be JSON: `{"full": "1.0.2-rc.1", ...}` (template from `ci.toml`).
+This demonstrates the layering of CWD config and specified config.
 
 ## Docker Support
 
@@ -459,24 +559,17 @@ where we copy the binary to the `/bin` folder in our new image.
 
 # FAQ
 
-1. Why is does the default strategy for `next` appends second pre-release?
+1.  **Q: Why does the default `next dev` strategy sometimes append a new prerelease identifier if one already exists (e.g., `1.0.0-alpha.1` becomes `1.0.0-alpha.1.dev.5`)?**
+    A: This behavior is intentional for the `dev` strategy. Its default prerelease template is `"{pre}.{identifier}.{distance}"`. The `{pre}` variable captures the *entire existing* prerelease string. This design allows you to see the lineage from a previous prerelease tag (like `alpha.1`) while also appending the `dev` specific information (identifier and commit distance). It's aimed at providing maximum context during development. If you prefer a different format for `dev` versions, you can customize `next.dev.prerelease_template` and `next.dev.identifier` in your configuration.
 
-Because the original idea and goal of this tool is to dynamically generate version
-for a project, when iterating/developing. So, the defaults reflect this goal and
-thus, require least amount of configuration.
+2.  **Q: Why is the project called `doxxer`?**
+    A: Because it's like somebody who [doxes](https://en.wikipedia.org/wiki/Doxing), by exposing the version information about Git repo to you! Is the name really fitting? Maybe not. It's just a name.
 
-2. Why is the project called `doxxer`?
-
-Because it's like somebody who [doxes](https://en.wikipedia.org/wiki/Doxing), by
-exposing the version information about Git repo to you! It the name really fitting? Maybe no. It's just a name.
-
-3. Why rust?
-
-To learn the language and Rust offers excellent support for creating binary CLI tools
-using `clap`.
+3.  **Q: Why Rust?**
+    A: To learn the language, and Rust offers excellent support for creating binary CLI tools, particularly with libraries like `clap` for argument parsing.
 
 4.  **Q: How do I set an option globally for all commands?**
-    A: You can set global options in your `doxxer.toml` file outside of any specific command table (e.g., general settings at the top, or within `[output]`, `[filter]` which apply globally unless overridden by command-specific sections). For environment variables, use the base prefixes (e.g., `DOXXER_OUTPUT__FORMAT`). CLI arguments are inherently command-specific if they are not one of the global flags like `-d` or `-f`. Refer to the [Configuration Priority](#configuration-priority) and [Configuration Files](#configuration-files) sections for more details.
+    A: Global options (like `directory`, `output.format`, `filter.tag`) can be set at the top level of your `doxxer.toml` file or within general tables like `[output]` and `[filter]`. These apply unless overridden by more specific configurations (command-specific, environment variables, or CLI arguments). For environment variables, use the base prefixes (e.g., `DOXXER_OUTPUT__FORMAT`, `DOXXER_FILTER__TAG`). Refer to the "Configuration Priority" and "Configuration Files" sections for more details.
 
 5.  **Q: What's the easiest way to always output JSON (or another format)?**
     A: The most persistent way is to set it in your `doxxer.toml` file:
@@ -486,24 +579,45 @@ using `clap`.
     ```
     Alternatively, you can export an environment variable: `export DOXXER_OUTPUT__FORMAT=json`. If you only need it for a single command execution, use the `-f json` (or `--format json`) CLI flag.
 
-6.  **Q: Can I have different prerelease identifiers for `patch` releases versus `minor` releases when using strategies like `prepatch` or `preminor`?**
+6.  **Q: Can I have different prerelease identifiers for `patch` vs. `minor` bumps when using strategies like `prepatch` or `preminor`?**
     A: Yes! You can define this in your `doxxer.toml` by targeting the specific strategy:
     ```toml
     [next.prepatch]
     identifier = "rc" # e.g., for release candidates on patches, version like 1.2.3-rc.1
 
     [next.preminor]
-    identifier = "beta" # e.g., for beta releases on minor bumps, version like 1.2.0-beta.1
+    identifier = "beta" # e.g., for beta releases on minor bumps, version like 1.3.0-beta.1
     ```
-    The same principle applies to other strategy-specific settings like `increment` values or custom `prerelease_template` and `build_metadata_template`. Refer to the [Configuration Options Table](#configuration-options-table) for all available configuration keys.
+    The same principle applies to other strategy-specific settings like `increment` values or custom `prerelease_template` and `build_metadata_template`. Refer to the "Configuration Options Table" for all available configuration keys.
 
 7.  **Q: Why does my `tag_filter` not seem to work?**
     A: Common reasons include:
-    *   **Regex Syntax:** Ensure your regular expression is valid and accurately describes the tags you want `doxxer` to consider.
-    *   **Matching:** By default, the regex needs to match the entire tag name. For example, to match tags like `v1.0.0`, `v1.2.3`, a regex like `^v\d+\.\d+\.\d+$` is appropriate (note TOML string escaping for backslashes: `^v\\d+\\.\\d+\\.\\d+$`).
-    *   **Configuration Priority:** Double-check that your intended `tag_filter` isn't being overridden by a higher-priority source (like a CLI argument or an environment variable). See [Configuration Priority](#configuration-priority).
-    *   **No Matching Tags:** There might genuinely be no tags in your repository that match the filter.
-    Test your regex with a dedicated regex testing tool if you're unsure about its correctness.
+    *   **Regex Syntax:** Ensure your regular expression is valid (e.g., correctly escaped in TOML) and accurately describes the tags you want `doxxer` to consider. Test your regex with a dedicated tool if unsure.
+    *   **Matching Scope:** The regex usually needs to match the entire part of the tag name you intend to parse for versioning. For example, to match tags like `v1.0.0`, `v1.2.3`, a regex like `^v(\d+\.\d+\.\d+)$` is appropriate if you want to capture the SemVer part.
+    *   **Configuration Priority:** Double-check that your intended `tag_filter` isn't being overridden by a higher-priority source (like a CLI argument or an environment variable). See "Configuration Priority".
+    *   **No Matching Tags:** There might genuinely be no tags in your repository that match the filter and also contain a parsable SemVer string.
+    *   **Interaction with SemVer Parsing:** `doxxer` first filters tags using `tag_filter`, then attempts to parse a SemVer string from the *matching tag name*. If your filter matches a tag that isn't itself a valid SemVer string (or doesn't start with one, possibly after stripping a 'v'), it will be ignored.
+
+8.  **Q: How does `tag_filter` interact with SemVer parsing?**
+    A: `doxxer` first applies the `tag_filter` regex to all Git tag names. For each tag name that matches the filter, `doxxer` then attempts to find and parse a Semantic Version from that tag name. It can handle common prefixes like 'v' automatically (e.g., `v1.2.3` is parsed as `1.2.3`). If your `tag_filter` matches a tag name from which a valid SemVer string cannot be extracted, that tag will be ignored when determining the latest version. For example, if `tag_filter = "release-(.*)"` matches `release-my-app-1.2.3`, doxxer will attempt to parse `my-app-1.2.3` as SemVer, which would likely fail unless the filter was more specific like `release-my-app-(v?\d+\.\d+\.\d+)`. It's best if your filter is designed to match tags that are clearly SemVer compatible.
+
+9.  **Q: Why do strategies like `premajor` or `prerelease` default to `build.1`-style prereleases, and `dev` to a different style?**
+    A: `doxxer` has distinct default behaviors for "release-oriented" prereleases versus "development" prereleases:
+    *   For strategies like `prerelease`, `premajor`, `preminor`, and `prepatch`, the default prerelease identifier is `"build"` and the default template is `"{identifier}.{inc}"` (e.g., `build.1`, `build.2`). This provides a generic prerelease sequence.
+    *   For the `dev` strategy (which is also the default for `doxxer next` if no strategy is given), the default identifier is `"dev"` and the template is `"{pre}.{identifier}.{distance}"` (e.g., `dev.5` or `alpha.1.dev.5`). This template is designed to append to existing prereleases and include commit distance, offering more context during active development.
+    These defaults can all be overridden in the configuration if you prefer a different style for any strategy (see the "Configuration Options Table"). For instance, a simple `doxxer next patch` (without `pre`) will not add any prerelease by default.
+
+10. **Q: My Git tag is `v1.2.3`, but `doxxer current` outputs `1.2.3`. Where did the 'v' go?**
+    A: `doxxer` treats the 'v' prefix on tags (like `v1.2.3`) as a common convention but not part of the core SemVer version itself. It automatically strips this 'v' when parsing the tag to determine the semantic version. The output (`{version}` variable) will be the pure `MAJOR.MINOR.PATCH` and any prerelease/build metadata. If you need a 'v' prefix in the final output string, you should use the `output.template` option, for example: `doxxer current -o "v{version}"` or by setting `output.template = "v{version}"` in your config file.
+
+11. **Q: How are multiple prerelease identifiers handled if the current version already has one and I use `next dev`?**
+    A: The `dev` strategy's default prerelease template is `"{pre}.{identifier}.{distance}"`. The `{pre}` variable is populated with the *entire existing prerelease string* of the current version.
+    For example, if your current tagged version is `1.2.3-alpha.1` and you run `doxxer next dev` (assuming the new identifier is `dev` and commit `distance` is 5):
+    - `{pre}` will be `alpha.1`.
+    - `{identifier}` will be `dev`.
+    - `{distance}` will be `5`.
+    The resulting prerelease string will be `alpha.1.dev.5`, making the full version `1.2.3-alpha.1.dev.5`.
+    Other strategies (like `major`, `minor`, `patch`, `prerelease`, `premajor`, etc.) typically replace the existing prerelease segment entirely or increment parts of it, rather than appending new identifiers after the full existing segment in this way. You can, of course, customize the `prerelease_template` for any strategy to achieve different concatenation effects if needed.
 
 # Roadmap
 

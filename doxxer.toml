@@ -3,7 +3,7 @@ filter.tag = "^v"
 output.template = "v{version}"
 
 [next.dev]
-identifier = "post"
+prerelease.identifier = "post"
 
 [next.prerelease]
 identifier = "rc"
