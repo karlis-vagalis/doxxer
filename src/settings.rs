@@ -57,7 +57,7 @@ impl Settings {
                 Some(Strategy::PreMinor { .. }) => "next.pre-minor",
                 Some(Strategy::PrePatch { .. }) => "next.pre-patch",
                 Some(Strategy::Dev { .. }) => "next.dev",
-                None => "next",
+                None => "next.dev",
             },
         };
 
@@ -98,8 +98,8 @@ impl Settings {
 
         let mut prerelease_identifier: String = default::PRERELEASE_IDENTIFIER.to_string();
         let mut prerelease_template: String = default::PRERELEASE_TEMPLATE.to_string();
-
         let mut build_metadata_template: String = default::BUILD_METADATA_TEMPLATE.to_string();
+
         match &cli.cmd {
             crate::cli::Commands::Current { field: _ } => {}
             crate::cli::Commands::Next { strategy, field: _ } => match strategy {
@@ -229,9 +229,24 @@ impl Settings {
                         );
                     }
                 },
-                None => {}
+                None => {
+                    let p = PrereleaseOptions {
+                        identifier: None,
+                        prerelease_template: None,
+                    };
+                    let b = BuildMetadataOptions {
+                        build_metadata_template: None,
+                    };
+                    prerelease_identifier =
+                        Settings::get_prerelease_identifier(config, &p, command);
+                    prerelease_template = Settings::get_prerelease_template(config, &p, command);
+                    build_metadata_template =
+                        Settings::get_build_metadata_template(config, &b, command);
+                }
             },
         }
+
+        dbg!(&command, &prerelease_identifier, &prerelease_template);
 
         Self {
             directory,
@@ -272,7 +287,13 @@ impl Settings {
             Some(s) => s.clone(),
             None => match config.get::<String>(command, "identifier") {
                 Ok(s) => s,
-                Err(_) => default::PRERELEASE_IDENTIFIER.to_string(),
+                Err(_) => {
+                    if command == "next.dev" {
+                        default::DEV_PRERELEASE_IDENTIFIER.to_string()
+                    } else {
+                        default::PRERELEASE_IDENTIFIER.to_string()
+                    }
+                }
             },
         }
     }
@@ -286,7 +307,13 @@ impl Settings {
             Some(s) => s.clone(),
             None => match config.get::<String>(command, "template") {
                 Ok(s) => s,
-                Err(_) => default::PRERELEASE_TEMPLATE.to_string(),
+                Err(_) => {
+                    if command == "next.dev" {
+                        default::DEV_PRERELEASE_TEMPLATE.to_string()
+                    } else {
+                        default::PRERELEASE_TEMPLATE.to_string()
+                    }
+                }
             },
         }
     }
@@ -300,7 +327,13 @@ impl Settings {
             Some(s) => s.clone(),
             None => match config.get::<String>(command, "template") {
                 Ok(s) => s,
-                Err(_) => default::BUILD_METADATA_TEMPLATE.to_string(),
+                Err(_) => {
+                    if command == "next.dev" {
+                        default::DEV_BUILD_METADATA_TEMPLATE.to_string()
+                    } else {
+                        default::BUILD_METADATA_TEMPLATE.to_string()
+                    }
+                }
             },
         }
     }

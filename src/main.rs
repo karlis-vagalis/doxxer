@@ -25,7 +25,7 @@ pub mod default {
     pub static INCREMENT: u64 = 1;
 
     pub static PRERELEASE_IDENTIFIER: &str = "build";
-    pub static DEV_IDENTIFIER: &str = "dev";
+    pub static DEV_PRERELEASE_IDENTIFIER: &str = "dev";
 
     pub static PRERELEASE_TEMPLATE: &str = "{identifier}.{inc}";
     pub static DEV_PRERELEASE_TEMPLATE: &str = "{pre}.{identifier}.{distance}";
@@ -71,11 +71,13 @@ fn main() {
                 Some(s) => s,
                 None => &Strategy::Dev(PrereleaseArgs {
                     prerelease_options: PrereleaseOptions {
-                        identifier: Some(default::DEV_IDENTIFIER.to_string()),
+                        identifier: Some(default::DEV_PRERELEASE_IDENTIFIER.to_string()),
                         prerelease_template: Some(default::DEV_PRERELEASE_TEMPLATE.to_string()),
                     },
                     build_metadata_options: BuildMetadataOptions {
-                        build_metadata_template: Some(default::DEV_BUILD_METADATA_TEMPLATE.to_string()),
+                        build_metadata_template: Some(
+                            default::DEV_BUILD_METADATA_TEMPLATE.to_string(),
+                        ),
                     },
                 }),
             };
