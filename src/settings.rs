@@ -11,29 +11,30 @@ use crate::{
     config::Configuration,
     default,
 };
-
+#[derive(Debug)]
 pub struct FilterSettings {
     pub tag: Regex,
 }
-
+#[derive(Debug)]
 pub struct OutputSettings {
     pub format: Format,
     pub template: String,
 }
-
+#[derive(Debug)]
 pub struct BumpSettings {
     pub increment: u64,
 }
-
+#[derive(Debug)]
 pub struct PrereleaseSettings {
     pub identifier: String,
     pub template: String,
 }
-
+#[derive(Debug)]
 pub struct BuildMetadataSettings {
     pub template: String,
 }
 
+#[derive(Debug)]
 pub struct Settings {
     pub directory: PathBuf,
     pub filter: FilterSettings,

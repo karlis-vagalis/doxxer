@@ -75,7 +75,7 @@ fn main() {
                         prerelease_template: Some(default::DEV_PRERELEASE_TEMPLATE.to_string()),
                     },
                     build_metadata_options: BuildMetadataOptions {
-                        build_metadata_template: Some(default::BUILD_METADATA_TEMPLATE.to_string()),
+                        build_metadata_template: Some(default::DEV_BUILD_METADATA_TEMPLATE.to_string()),
                     },
                 }),
             };

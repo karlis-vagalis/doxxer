@@ -4,7 +4,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 use serde_json::{json, Value};
 
 use crate::{
-    cli::{Field, Format, PreReleaseWithBumpArgs, PrereleaseArgs},
+    cli::{Field, Format},
     settings::Settings,
     template::TemplateVariables,
     Strategy,
@@ -140,9 +140,6 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
 
     let mut next = latest;
 
-    let mut pre = Prerelease::EMPTY;
-    let mut build = BuildMetadata::EMPTY;
-
     // Set new major/minor/patch versions
     match strategy {
         Strategy::Major(_) | Strategy::PreMajor(_) => {
@@ -162,24 +159,16 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
     }
 
     // Set new prerelease and metadata
-    match strategy {
-        Strategy::Prerelease(_)
-        | Strategy::PreMajor(_)
-        | Strategy::PreMinor(_)
-        | Strategy::PrePatch(_) => {
-            let inc = get_inc(next.pre.as_str(), &settings.prerelease.identifier.as_str());
-            let template_variables = TemplateVariables {
-                pre: next.pre.as_str().to_string(),
-                inc,
-                hash: short_hash,
-                distance: commit_count,
-                identifier: settings.prerelease.identifier.clone(),
-            };
-            pre = handle_prerelease(&settings.prerelease.template, &template_variables);
-            build = handle_build_metadata(&settings.build.template, &template_variables);
-        }
-        _ => {}
-    }
+    let inc = get_inc(next.pre.as_str(), &settings.prerelease.identifier.as_str());
+    let template_variables = TemplateVariables {
+        pre: next.pre.as_str().to_string(),
+        inc,
+        hash: short_hash,
+        distance: commit_count,
+        identifier: settings.prerelease.identifier.clone(),
+    };
+    let pre = handle_prerelease(&settings.prerelease.template, &template_variables);
+    let build = handle_build_metadata(&settings.build.template, &template_variables);
 
     next.pre = pre;
     next.build = build;

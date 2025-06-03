@@ -1,0 +1,3 @@
+
+filter.tag = "^v"
+output.template = "v{version}"
