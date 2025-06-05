@@ -4,7 +4,7 @@ use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::process::Command;
 
-use crate::common::{add_all, add_commit, create_dummy_file, initialize_repository};
+use crate::common::{add_all, add_commit, create_file, initialize_repository};
 
 #[test]
 fn test_current_no_git_repo() {
@@ -23,19 +23,18 @@ fn test_current_no_git_repo() {
 
 #[test]
 fn test_current_repo_no_tags() {
-    let td = tempfile::tempdir().unwrap();
+    let mut td = tempfile::tempdir().unwrap();
+    td.disable_cleanup(true);
+    let dir = td.path();
 
-    let repo = initialize_repository(td.path());
-    create_dummy_file(repo.path(), "file.txt", "initial content");
+    let repo = initialize_repository(dir);
+    create_file(dir, "file.txt", "initial content");
     add_all(&repo);
     add_commit(&repo, "Initial commit");
 
-    let path_to_keep = td.keep();
-    dbg!(&path_to_keep);
-
     Command::cargo_bin(env!("CARGO_PKG_NAME"))
         .unwrap()
-        .current_dir(repo.path().parent().unwrap())
+        .current_dir(dir)
         .arg("current")
         .assert()
         .failure()
