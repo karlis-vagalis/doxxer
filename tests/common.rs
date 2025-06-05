@@ -1,4 +1,4 @@
-use git2::{Commit, ErrorCode, IndexAddOption, Oid, Repository, Signature};
+use git2::{Commit, IndexAddOption, Repository};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -14,14 +14,13 @@ pub fn initialize_repository(path: &Path) -> Repository {
 }
 
 pub fn add_commit<'repo>(repo: &'repo Repository, message: &str) -> Commit<'repo> {
-
     let mut index = repo.index().unwrap();
     let tree_oid = index.write_tree().unwrap();
     let tree = repo.find_tree(tree_oid).unwrap();
 
     let parent_commit = match repo.revparse_single("HEAD") {
         Ok(obj) => Some(obj.into_commit().unwrap()),
-        Err(e) => None
+        Err(_) => None,
     };
     let mut parents = Vec::new();
     if parent_commit.is_some() {
@@ -39,18 +38,6 @@ pub fn add_commit<'repo>(repo: &'repo Repository, message: &str) -> Commit<'repo
     )
     .unwrap();
     repo.head().unwrap().peel_to_commit().unwrap()
-}
-
-pub fn add_tag(repo: &Repository, commit: &Commit, tag_name: &str) -> Oid {
-    let signature = Signature::now("Test User", "test@example.com").unwrap();
-    repo.tag(
-        tag_name,
-        &commit.as_object(),
-        &signature,
-        "",    // No tag message for lightweight tags
-        false, // Not forcing
-    )
-    .unwrap()
 }
 
 pub fn add_all(repo: &Repository) {

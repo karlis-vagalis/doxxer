@@ -23,8 +23,7 @@ fn test_current_no_git_repo() {
 
 #[test]
 fn test_current_repo_no_tags() {
-    let mut td = tempfile::tempdir().unwrap();
-    td.disable_cleanup(true);
+    let td = tempfile::tempdir().unwrap();
     let td = td.path();
 
     let repo = initialize_repository(td);
@@ -37,6 +36,6 @@ fn test_current_repo_no_tags() {
         .current_dir(td)
         .arg("current")
         .assert()
-        .failure()
-        .stderr(predicate::str::contains("No tags found in the repository"));
+        .success()
+        .stdout(predicate::str::contains("0.0.0"));
 }
