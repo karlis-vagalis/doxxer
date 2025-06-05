@@ -1,26 +1,23 @@
-use git2::{Repository, Signature, Commit, Oid};
+use git2::{Commit, IndexAddOption, Oid, Repository, Signature};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
-use tempfile::{TempDir, tempdir};
 
-pub fn initialize_repository() -> (TempDir, Repository) {
-    let td = tempdir().unwrap();
-    let repo = Repository::init(td.path()).unwrap();
+pub fn initialize_repository(path: &Path) -> Repository {
+    let repo = Repository::init(path).unwrap();
     {
         let mut config = repo.config().unwrap();
         config.set_str("user.name", "Test User").unwrap();
         config.set_str("user.email", "test@example.com").unwrap();
     }
-    (td, repo)
+    repo
 }
 
-pub fn add_commit<'repo>(
-    repo: &'repo Repository,
-    message: &str
-) -> Commit<'repo> {
+pub fn add_commit<'repo>(repo: &'repo Repository, message: &str) -> Commit<'repo> {
+    let mut index = repo.index().unwrap();
+    let oid = index.write_tree().unwrap();
     let signature = repo.signature().unwrap();
-    let oid = repo.index().unwrap().write_tree().unwrap();
+    let parent_commit = repo.head().unwrap().peel_to_commit().unwrap();
     let tree = repo.find_tree(oid).unwrap();
     repo.commit(
         Some("HEAD"),
@@ -28,7 +25,7 @@ pub fn add_commit<'repo>(
         &signature,
         message,
         &tree,
-        &[],
+        &[&parent_commit],
     )
     .unwrap();
     repo.head().unwrap().peel_to_commit().unwrap()
@@ -40,10 +37,18 @@ pub fn add_tag(repo: &Repository, commit: &Commit, tag_name: &str) -> Oid {
         tag_name,
         &commit.as_object(),
         &signature,
-        "", // No tag message for lightweight tags
+        "",    // No tag message for lightweight tags
         false, // Not forcing
     )
     .unwrap()
+}
+
+pub fn add_all(repo: &Repository) {
+    let mut index = repo.index().unwrap();
+    index
+        .add_all(&["."], IndexAddOption::DEFAULT, None)
+        .unwrap();
+    index.write().unwrap();
 }
 
 // Helper to create a dummy file in the repo, needed for commits to have content

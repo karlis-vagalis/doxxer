@@ -67,7 +67,8 @@ impl Settings {
                 Ok(dir) => PathBuf::from(dir),
                 Err(_) => PathBuf::from(default::DIRECTORY),
             },
-        }).unwrap();
+        })
+        .unwrap();
 
         let filter_tag = match &cli.filter.tag {
             Some(filter) => filter.clone(),
