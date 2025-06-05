@@ -1,5 +1,5 @@
 use git2::{Commit, IndexAddOption, Repository};
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
@@ -53,4 +53,13 @@ pub fn create_file(dir: &Path, file_name: &str, content: &str) {
     let file_path = dir.join(file_name);
     let mut file = File::create(&file_path).unwrap();
     writeln!(file, "{}", content).unwrap();
+}
+
+pub fn add_tag(repo: &Repository, tag_name: &str) {
+    let obj = repo.revparse_single("HEAD").unwrap();
+    repo.tag_lightweight(tag_name, &obj, false).unwrap();
+}
+
+pub fn get_short_hash(commit: &Commit) -> String {
+    commit.id().to_string()[..7].to_string()
 }
