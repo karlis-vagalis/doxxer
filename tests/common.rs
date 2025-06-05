@@ -54,16 +54,3 @@ pub fn create_file(dir: &Path, file_name: &str, content: &str) {
     let mut file = File::create(&file_path).unwrap();
     writeln!(file, "{}", content).unwrap();
 }
-
-// Helper to append to a dummy file in the repo, needed for commits to have content
-#[allow(dead_code)] // This might be used by specific tests later
-pub fn append_to_dummy_file(repo_path: &Path, file_name: &str, content: &str) {
-    let file_path = repo_path.join(file_name);
-    let mut file = OpenOptions::new().append(true).open(&file_path).unwrap();
-    writeln!(file, "{}", content).unwrap();
-
-    // Stage the file
-    let mut index = Repository::open(repo_path).unwrap().index().unwrap();
-    index.add_path(Path::new(file_name)).unwrap();
-    index.write().unwrap();
-}
