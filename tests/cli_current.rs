@@ -25,16 +25,16 @@ fn test_current_no_git_repo() {
 fn test_current_repo_no_tags() {
     let mut td = tempfile::tempdir().unwrap();
     td.disable_cleanup(true);
-    let dir = td.path();
+    let td = td.path();
 
-    let repo = initialize_repository(dir);
-    create_file(dir, "file.txt", "initial content");
+    let repo = initialize_repository(td);
+    create_file(td, "file.txt", "initial content");
     add_all(&repo);
     add_commit(&repo, "Initial commit");
 
     Command::cargo_bin(env!("CARGO_PKG_NAME"))
         .unwrap()
-        .current_dir(dir)
+        .current_dir(td)
         .arg("current")
         .assert()
         .failure()
