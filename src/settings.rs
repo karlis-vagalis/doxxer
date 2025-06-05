@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{self, PathBuf};
 
 use clap::ValueEnum as _;
 use regex::Regex;
@@ -61,13 +61,14 @@ impl Settings {
             },
         };
 
-        let directory = match &cli.directory {
+        let directory = path::absolute(match &cli.directory {
             Some(directory) => directory.clone(),
             None => match config.get::<String>(command, "directory") {
                 Ok(dir) => PathBuf::from(dir),
                 Err(_) => PathBuf::from(default::DIRECTORY),
             },
-        };
+        })
+        .unwrap();
 
         let filter_tag = match &cli.filter.tag {
             Some(filter) => filter.clone(),
