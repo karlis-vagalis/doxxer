@@ -1,315 +1,90 @@
-✨**doxxer**✨ is your secret weapon for taming software versions! This highly configurable CLI tool, written in *Rust*, automates dynamic [SemVer](https://semver.org/) versioning by using your latest Git tags and commit history.
-
-No more manual versioning headaches and inconsistent version numbers scattered across different projects and programming languages. `doxxer` streamlines this process, ensuring your versions and release tags are always accurate and consistent.
-
-Inspired by the utility of `git describe --tags`, it offers robust features like tag filtering, powerful templating for custom version formats, various version bumping strategies, and multiple output options.
+✨**doxxer**✨ automates [SemVer](https://semver.org/) versioning using your Git tags and commit history. Built in *Rust*, this configurable CLI tool eliminates manual versioning headaches and ensures consistent versions across projects. Inspired by `git describe --tags`, `doxxer` offers tag filtering, custom version formatting via templates, and diverse version bumping strategies.
 
 ![image info](./docs/demo.gif)
 
 # Introduction
 
-## Getting started
+## Getting Started
 
-You can currently install the tool locally via *cargo*:
+Install `doxxer` via `cargo` or by downloading a binary from the [GitHub Releases](https://github.com/karlis-vagalis/doxxer/releases) page.
 
+**Cargo:**
 ```bash
 cargo install doxxer
 ```
 
-or downloading latest binary from [GitHub Release](https://github.com/karlis-vagalis/doxxer/releases) page.
-
 ## Configuration
 
-`doxxer` offers a flexible configuration system, allowing you to tailor its behavior to your specific needs. Settings can be applied through command-line arguments, environment variables, configuration files, or rely on sensible defaults.
+`doxxer` loads settings in layers, with later layers overriding earlier ones:
+1. Default values
+2. Config files in Current Working Directory (`.doxxer.toml`, then `doxxer.toml`)
+3. Specified config file (`--config <file>`) or files in a specified directory (`--config <dir>` or `--directory <dir>`)
+4. Environment variables (e.g., `DOXXER__OUTPUT__FORMAT=json`)
+5. Command-line arguments (e.g., `--output json`)
 
-### Configuration Priority
-
-`doxxer` loads settings in layers. Each subsequent layer can override the settings defined in the previous ones. The order of loading and precedence (from lowest to highest) is as follows:
-
-1.  **Default Values:** These are the built-in defaults for all settings. This is the base layer.
-2.  **Configuration Files in Current Working Directory (CWD):** `doxxer` automatically loads `.doxxer.toml` and then `doxxer.toml` (if they exist) from the current working directory. Settings in `doxxer.toml` override those in `.doxxer.toml` if both are present and define the same key. These files act as a foundational layer of customization.
-3.  **Specified Configuration File or Directory:**
-    *   If a specific configuration file is provided via `--config <path_to_file>`, it's loaded, and its settings override those from the CWD files.
-    *   If a directory is provided via `--config <path_to_dir>` or `--directory <path_to_repo_dir>` (and no specific file was given with `--config`), `doxxer` looks for `.doxxer.toml` then `doxxer.toml` within that directory. Found settings override the CWD layer. If both `--config <dir>` and `--directory <dir>` are provided, the path from `--config` is preferred.
-4.  **Environment Variables:** Variables prefixed with `DOXXER__` (e.g., `DOXXER__OUTPUT__FORMAT=json`) are loaded next. These will override any settings from configuration files or defaults.
-5.  **Command-line Arguments:** Options passed directly when running `doxxer` (e.g., `--output json` or `-f json`). These have the highest precedence and override all other settings.
-
-Essentially, `doxxer` starts with defaults, then applies settings from CWD config files, then from a more specific config file/directory (if specified), then environment variables, and finally, CLI arguments make the ultimate decision.
+For full details on configuration loading and precedence, see [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md).
 
 ### Configuration Files
 
-`doxxer` can be configured using TOML files, typically named `doxxer.toml` or `.doxxer.toml`.
+Configuration can be done via `doxxer.toml` or `.doxxer.toml` files using TOML syntax. These can define global settings or command-specific ones.
+Example:
+```toml
+# Global setting
+tag_filter = "^v[0-9]"
 
-**Loading and Search Order:**
+[output]
+format = "json"
 
-1.  **Current Working Directory (CWD) Scan:** `doxxer` always first attempts to load configuration from files named `.doxxer.toml` and then `doxxer.toml` located in the current working directory where `doxxer` is executed. If both exist, settings from `doxxer.toml` will take precedence over `.doxxer.toml` for any overlapping keys. These serve as a base configuration.
-2.  **Specified Configuration (`--config <PATH>`):**
-    *   If `<PATH>` is a **file** (e.g., `--config /path/to/myconfig.toml`), this specific file is loaded. Its settings override any found in the CWD configuration files.
-    *   If `<PATH>` is a **directory** (e.g., `--config /path/to/confdir/`), `doxxer` looks for `.doxxer.toml` and then `doxxer.toml` within this directory. Settings from a found file (again, `doxxer.toml` preferred over `.doxxer.toml`) override the CWD configuration.
-3.  **Repository Directory (`--directory <PATH>` as fallback for config):**
-    *   If the `--config <PATH>` option is **not** used to specify a file, and a `--directory <PATH>` (for the Git repository) is provided and is different from the CWD, `doxxer` will search for `.doxxer.toml` and then `doxxer.toml` within this repository directory.
-    *   Settings from a file found here will override the CWD configuration. This allows for project-specific configurations located with the repository itself, if not explicitly pointed to by `--config`.
-    *   If `--config` specifies a directory, this step is effectively covered by point 2.
-
-**Key Points for Config Files:**
-*   Within a directory, `doxxer.toml` values take precedence over `.doxxer.toml` if both files exist and define the same settings.
-*   Configuration files loaded via `--config` (either a direct file or files within a specified directory) take precedence over files found in the CWD or via `--directory`.
-*   All loaded configurations are merged, with higher precedence sources (as listed in "Configuration Priority") overriding lower ones.
-
-**Structure:**
-
-Configuration settings can be global or command-specific.
-
-*   **Global Settings:** Apply to all commands unless overridden by a more specific setting.
-    ```toml
-    # Example global settings in doxxer.toml
-    directory = "/path/to/your/git/repo" # Default repository path
-    tag_filter = "^v[0-9]"              # Filter tags starting with 'v' and a digit
-
-    [output]                            # Settings related to output
-    format = "json"                     # Default output format
-    template = "{version}-final"        # Default output template
-    ```
-
-*   **Command-Specific Settings:** Apply only to a particular command (e.g., `current`, `next`) or even a specific strategy within `next` (e.g., `next.major`, `next.patch`).
-    ```toml
-    # Example command-specific settings in doxxer.toml
-
-    [current]
-    # Override output format specifically for the 'current' command
-    output.format = "plain"
-
-    # Example:
-    # [next.minor]
-    # prerelease.identifier = "beta" # Sets "beta" for "doxxer next minor" strategy
-
-    [next.major]
-    # Settings specific to 'doxxer next major'
-    increment = 2 # Increment major version by 2
-    build_metadata.template = "prod.{hash}"
-
-    [next.patch]
-    # Settings specific to 'doxxer next patch'
-    prerelease.identifier = "rc"
-    ```
+[next.major]
+increment = 2
+```
+For detailed structure and file loading logic, refer to the [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md).
 
 ### Environment Variables
 
-You can configure `doxxer` using environment variables.
-
-*   **Prefix:** All variables must start with `DOXXER__`.
-*   **Structure:** For nested settings (like those in TOML tables or for specific commands/strategies), use a double underscore `__` as a separator.
-
-**Examples:**
-
-*   Set the global output format:
-    `export DOXXER__OUTPUT__FORMAT=json`
-*   Set the increment for the `next major` command:
-    `export DOXXER__NEXT__MAJOR__INCREMENT=2`
-*   Set the prerelease identifier for the `next prerelease` command:
-    `export DOXXER__NEXT__PRERELEASE__IDENTIFIER=alpha`
-*   Set the global tag filter:
-    `export DOXXER__TAG_FILTER="^v"`
-
-### Configuration Options Table
-
-The following table summarizes all available configuration options, their corresponding CLI flags, configuration file keys (within `doxxer.toml` or `.doxxer.toml`), environment variables, and default values.
-
-| Purpose                                    | Option Name (Conceptual)     | CLI Flag(s) / Arg              | Config File Key (`[table].key`)                | Environment Variable (`DOXXER__...`)             | Default Value                                     |
-| ------------------------------------------ | ---------------------------- | ------------------------------- | ---------------------------------------------- | ----------------------------------------------- | ------------------------------------------------- |
-| **Global Options**                         |                              |                                 |                                                |                                                 |                                                   |
-| Path to the Git repository                 | `directory`                  | `-d, --directory <PATH>`        | `directory`                                    | `DOXXER__DIRECTORY`                              | `.` (current directory)                           |
-| Path to config file or directory           | `config_path`                | `-c, --config <PATH>`           | N/A (CLI only)                                 | N/A (CLI only)                                  | (none)                                            |
-| Regex to filter relevant Git tags          | `filter.tag`                 | `-t, --tag-filter <REGEX>`      | `filter.tag`                                   | `DOXXER__FILTER__TAG`                            | `""` (empty string, no filter)                    |
-| Output format for the version              | `output.format`              | `-f, --format <FORMAT>`         | `output.format`                                | `DOXXER__OUTPUT__FORMAT`                         | `plain`                                           |
-| Template for the resulting version string  | `output.template`            | `-o, --template <TEMPLATE>`     | `output.template`                              | `DOXXER__OUTPUT__TEMPLATE`                       | `{version}`                                       |
-| **Command: `current` & `next`**            |                              |                                 |                                                |                                                 |                                                   |
-| Field/part of the version to output        | `field`                      | `-F, --field <FIELD>`           | N/A (CLI only)                                 | N/A (CLI only)                                  | (outputs full version)                            |
-| **Strategy: `major`, `minor`, `patch`**    |                              |                                 | `[next.major]`, `[next.minor]`, `[next.patch]` | `DOXXER__NEXT__MAJOR__...`, etc.                 |                                                   |
-| Version bump increment                     | `increment`                  | `--increment <NUM>`             | `increment`                                    | `...INCREMENT`                                  | `1`                                               |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `""` (empty string)                               |
-| **Strategy: `prerelease`**                 |                              |                                 | `[next.prerelease]`                            | `DOXXER__NEXT__PRERELEASE__...`                  |                                                   |
-| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `prerelease.identifier`                        | `...IDENTIFIER`                                 | `build`                                           |
-| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `prerelease.template`                        | `...PRERELEASE_TEMPLATE`                        | `{identifier}.{inc}`                              |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `""` (empty string)                               |
-| **Strategy: `premajor`, `preminor`, `prepatch`** |                        |                                 | `[next.premajor]`, etc.                        | `DOXXER__NEXT__PREMAJOR__...`, etc.              |                                                   |
-| Version bump increment                     | `increment`                  | `--increment <NUM>`             | `increment`                                    | `...INCREMENT`                                  | `1`                                               |
-| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `prerelease.identifier`                        | `...IDENTIFIER`                                 | `build`                                           |
-| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `prerelease.template`                        | `...PRERELEASE_TEMPLATE`                        | `{identifier}.{inc}`                              |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `""` (empty string)                               |
-| **Strategy: `dev`**                        |                              |                                 | `[next.dev]`                                   | `DOXXER__NEXT__DEV__...`                         |                                                   |
-| Prerelease identifier                      | `identifier`                 | `<IDENTIFIER>` (positional)     | `prerelease.identifier`                        | `...IDENTIFIER`                                 | `dev`                                             |
-| Template for prerelease part               | `prerelease_template`        | `--prerelease-template <TPL>`   | `prerelease.template`                        | `...PRERELEASE_TEMPLATE`                        | `{pre}.{identifier}.{distance}`                   |
-| Build metadata template                    | `build_metadata.template`    | `--build-metadata-template <TPL>` | `build_metadata.template`                    | `...BUILD_METADATA__TEMPLATE`                 | `{hash}`                                          |
-
-**Notes on Config File Keys & Environment Variables for Strategies:**
-*   For strategies like `major`, `minor`, `patch`, `premajor`, `preminor`, `prepatch`, `prerelease`, and `dev`, the `Config File Key` shown is relative to the strategy's table in `doxxer.toml`. For example, for the `major` strategy, `increment` is specified as `increment = 1` under the `[next.major]` table.
-*   The `Environment Variable` column for strategies uses `...` as a placeholder for the capitalized strategy name part. For example, for `increment` under the `major` strategy, the variable would be `DOXXER__NEXT__MAJOR__INCREMENT`. For `identifier` under the `dev` strategy, it would be `DOXXER__NEXT__DEV__IDENTIFIER`.
-*   CLI flags like `--increment`, `--prerelease-template`, and `--build-metadata-template` are available for the specific `next` strategies that support them. Clap auto-generates short versions of flags (e.g., `-i` for `--increment`) if they don't conflict; refer to `doxxer next <STRATEGY> --help` for the exact short flags.
+Set environment variables prefixed with `DOXXER__`, using `__` for nesting (e.g., `DOXXER__OUTPUT__FORMAT=json`, `DOXXER__NEXT__MAJOR__INCREMENT=2`). See the [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) for a comprehensive list of variables mapped to config options.
 
 ## Usage
 
-`doxxer` is controlled via two main subcommands: `current` and `next`. Several global options can be applied to modify behavior across commands.
-
-**Global CLI Options:**
-
-The following global options can be used with `doxxer`:
-
-*   `-d, --directory <PATH>`: Path to the Git repository.
-*   `-c, --config <PATH>`: Path to a specific configuration file or directory containing `doxxer.toml`.
-*   `-t, --tag-filter <REGEX>`: A regular expression to filter Git tags.
-*   `-f, --format <FORMAT>`: Specifies the output format (`plain`, `json`).
-*   `-o, --template <TEMPLATE>`: Defines the output template string.
-
-For detailed information on how these options are configured via files or environment variables, and their default values, please see the main [Configuration](#configuration) section.
+`doxxer` is controlled via two main subcommands: `current` and `next`.
+Global options affecting all commands can be configured. For a comprehensive list of these options, refer to the [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) document or use `doxxer --help`.
 
 The general syntax is:
 ```bash
 doxxer [GLOBAL OPTIONS] <COMMAND> [COMMAND OPTIONS]
 ```
 
-You can always get help with:
-```bash
-doxxer help
-```
-Which outputs:
-```text
-Dynamic version manager for Git repositories
-
-Usage: doxxer [OPTIONS] <COMMAND>
-
-Commands:
-  current  Get current version
-  next     Get next version
-  help     Print this message or the help of the given subcommand(s)
-
-Options:
-  -d, --directory <PATH>  Path to the Git repository
-  -c, --config <PATH>     Path to the config file or directory
-  -h, --help              Print help
-  -V, --version           Print version
-
-Filter options:
-  -t, --tag-filter <REGEX>  Regular expression for selecting relevant tags [default: ]
-
-Output options:
-  -f, --format <FORMAT>      Output format [default: plain] [possible values: plain, json]
-  -o, --template <TEMPLATE>  Template for resulting version [default: {version}]
-```
-
 ### Current Version
-
 The `current` command retrieves the latest SemVer version from your Git tags.
 ```bash
-doxxer current [OPTIONS]
+doxxer current
 ```
-You can specify a particular field of the version to extract using the `-F, --field` option (e.g., `major`, `minor`, `patch`, `prerelease`, `build-metadata`).
-
-For detailed help:
-```bash
-doxxer current --help
-```
-Result:
-```text
-Get current version
-
-Usage: doxxer current [OPTIONS]
-
-Options:
-  -F, --field <FIELD>  Field/part of the version [possible values: major, minor, patch, prerelease, build-metadata]
-  -h, --help           Print help
-```
+You can extract a specific field of the version (e.g., `major`, `minor`) using the `-F, --field` option. For detailed command options, see [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) or run `doxxer current --help`.
 
 ### Next Version
-
-The `next` command calculates the next SemVer version based on a chosen strategy and the current state of the repository.
+The `next` command calculates the next SemVer version based on a chosen strategy.
 ```bash
-doxxer next [OPTIONS] [STRATEGY] [STRATEGY_OPTIONS]
+doxxer next [STRATEGY]
 ```
-If no strategy is specified, `doxxer next` defaults to the `dev` strategy, which is ideal for generating development versions.
-
-Like the `current` command, you can use the `-F, --field` option to extract a specific part of the calculated next version.
-
-Each strategy (e.g., `major`, `minor`, `patch`, `prerelease`, `dev`) has its own set of options (like `--increment`, `--identifier`, `--prerelease-template`). These, along with their configuration file and environment variable counterparts, are detailed in the [Configuration Options Table](#configuration-options-table).
-
-For detailed help on the `next` command and its strategies:
-```bash
-doxxer next --help
-```
-Result:
-```text
-Get next version
-
-Usage: doxxer next [OPTIONS] [STRATEGY]
-
-Bumping strategy:
-  major       Major version
-  minor       Minor version
-  patch       Patch version
-  prerelease  Pre-release version
-  pre-major   Major + pre-release version
-  pre-minor   Minor + pre-release version
-  pre-patch   Patch + pre-release version
-  dev         Development version (non-standard)
-  help        Print this message or the help of the given subcommand(s)
-
-Options:
-  -F, --field <FIELD>  Field/part of the version [possible values: major, minor, patch, prerelease, build-metadata]
-  -h, --help           Print help
-```
+If no strategy is specified, it defaults to `dev`. You can use `-F, --field` to extract specific parts of the version. Each strategy (e.g., `major`, `patch`, `prerelease`) has specific options. For detailed information on strategies and their options, consult the [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) or run `doxxer next --help`.
 
 ## Template Variables
+`doxxer` allows for flexible output formatting using templates for the overall version string, prerelease identifiers, and build metadata.
 
-`doxxer` uses templates for formatting the final version string (`output.template`), the prerelease segment (`prerelease.template`), and the build metadata segment (`build_metadata.template`). These templates can use several variables that will be replaced with dynamic values.
+Key templates include:
+*   `output.template`: Formats the final version string. Must include `{version}`.
+*   `prerelease.template`: Formats the prerelease segment (e.g., `rc.1`).
+*   `build_metadata.template`: Formats the build metadata segment (e.g., `build.a1b2c3d`).
 
-### For `output.template`
+Common variables available (depending on the template context) include:
+*   `{version}`: The full SemVer string.
+*   `{identifier}`: The prerelease identifier (e.g., `alpha`, `rc`).
+*   `{inc}`: The prerelease auto-incrementing number.
+*   `{distance}`: Commit count since the last tag.
+*   `{hash}`: Short commit hash.
+*   `{pre}`: Existing prerelease string (useful in `dev` strategy).
 
-This template is used to construct the final version string that `doxxer` outputs.
-
-| Variable    | Description                                                                 | Example Default Usage |
-| :---------- | :-------------------------------------------------------------------------- | :-------------------- |
-| `{version}` | The full SemVer version string (e.g., `1.2.3`, `1.2.3-rc.1`, `1.2.3+build.456`). **Required.** | `"{version}"`         |
-
-**Example `output.template` values:**
-*   `"v{version}"` -> `v1.2.3`
-*   `"{version}-release"` -> `1.2.3-rc.1-release`
-
-### For `prerelease.template`
-
-This template defines the format of the prerelease part of the version (e.g., the `rc.1` in `1.2.3-rc.1`). It is used when a prerelease version is being generated.
-
-| Variable       | Description                                                                                                | Example Default Usage                               |
-| :------------- | :--------------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
-| `{pre}`        | The existing prerelease part of the current version, if any. Useful for additive prereleases like in the `dev` strategy. | `"{pre}.{identifier}.{distance}"` (for `dev`)        |
-| `{identifier}` | The identifier for the prerelease (e.g., `alpha`, `beta`, `rc`, `dev`). This comes from the `identifier` setting. | `"{identifier}.{inc}"` (standard prerelease)        |
-| `{inc}`        | The auto-incrementing number for the current prerelease identifier.                                        | `"{identifier}.{inc}"`                              |
-| `{distance}`   | The number of commits since the last tag. Often used in `dev` versions.                                    | `"{pre}.{identifier}.{distance}"` (for `dev`)        |
-| `{hash}`       | The first 7 characters of the current commit hash.                                                         | (More common in build metadata but can be used here) |
-
-**Example `prerelease.template` values (assuming current version `1.2.0` and identifier `rc`):**
-*   `"{identifier}.{inc}"` (default) -> `rc.1` (next version might be `1.2.1-rc.1` or `1.2.0-rc.1` depending on strategy)
-*   `"preview.{inc}"` -> `preview.1`
-*   If current is `1.2.0-alpha.1`, strategy is `dev` (identifier `dev`), `distance` is 5: `"{pre}.{identifier}.{distance}"` -> `alpha.1.dev.5` (making the version `1.2.0-alpha.1.dev.5`)
-
-
-### For `build_metadata.template`
-
-This template defines the format of the build metadata part of the version (e.g., the `build.456` in `1.2.3+build.456`).
-
-| Variable     | Description                                                              | Example Default Usage          |
-| :----------- | :----------------------------------------------------------------------- | :----------------------------- |
-| `{hash}`     | The first 7 characters of the current commit hash.                       | `"{hash}"` (for `dev` strategy) |
-| `{distance}` | The number of commits since the last tag.                                |                                |
-| `{pre}`      | The existing prerelease part of the current version, if any.             |                                |
-| `{identifier}` | The prerelease identifier, if a prerelease is part of the main version.  |                                |
-| `{inc}`      | The prerelease increment number, if a prerelease is part of the main version. |                                |
-
-
-**Example `build_metadata.template` values:**
-*   `"build.{hash}"` -> `build.a1b2c3d`
-*   `"commit.{distance}.{hash}"` -> `commit.10.a1b2c3d`
-
-**Note:** The availability and exact value of variables like `{pre}`, `{identifier}`, and `{inc}` in the `build_metadata.template` can depend on whether the version *before* adding build metadata already contains a prerelease segment. The `{hash}` and `{distance}` are generally always available.
+For a comprehensive list of variables, their detailed descriptions, and examples, please see the [Template Variables Details](./docs/ADVANCED_CONFIGURATION.md#template-variables-details) in our advanced guide.
 
 ## Usage Examples
 
