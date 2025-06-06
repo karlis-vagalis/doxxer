@@ -1,9 +1,0 @@
-
-filter.tag = "^v"
-output.template = "v{version}"
-
-[next.dev]
-prerelease.identifier = "post"
-
-[next.prerelease]
-identifier = "rc"
