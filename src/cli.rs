@@ -138,7 +138,7 @@ pub struct BuildMetadataOptions {
 }
 
 #[derive(Debug, Args)]
-#[group(required = false, multiple = false)]
+#[group(required = false, multiple = true)]
 pub struct FilterOptions {
     #[clap(short, long="tag-filter", value_name="REGEX",  help=format!("Regular expression for selecting relevant tags [default: {}]", default::TAG_FILTER))]
     pub tag: Option<String>,
@@ -146,7 +146,7 @@ pub struct FilterOptions {
 
 /// Output options
 #[derive(Debug, Args)]
-#[group(required = false, multiple = false)]
+#[group(required = false, multiple = true)]
 pub struct OutputOptions {
     #[clap(short = 'f', long, help = "Output format [default: plain]")]
     pub format: Option<Format>,
