@@ -9,7 +9,7 @@ current-tag := `cargo run -- current`
 build-docker:
     docker buildx build \
         -t {{image}}:{{default-tag}} \
-        -t {{image}}:{{current-version}} \
+        -t {{image}}:{{current-tag}} \
         .
 
 run-docker *args:
@@ -17,4 +17,4 @@ run-docker *args:
 
 publish-docker: build-docker
     docker push {{image}}:{{default-tag}}
-    docker push {{image}}:{{current-version}}
+    docker push {{image}}:{{current-tag}}
