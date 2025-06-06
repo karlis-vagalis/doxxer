@@ -31,9 +31,6 @@ earlier ones:
 4. Environment variables (e.g., `DOXXER__OUTPUT__FORMAT=json`)
 5. Command-line arguments (e.g., `--output json`)
 
-For full details on configuration loading and precedence, see
-[Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md).
-
 ### Configuration Files
 
 Configuration can be done via `doxxer.toml` or `.doxxer.toml` files using TOML
@@ -50,20 +47,16 @@ format = "json"
 [next.patch]
 increment = 2
 ```
-For detailed structure and file loading logic, refer to the
-[Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md).
 
 ### Environment Variables
 
 Set environment variables prefixed with `DOXXER__`, using `__` for nesting (e.g.,
-`DOXXER__OUTPUT__FORMAT=json`, `DOXXER__NEXT__MAJOR__INCREMENT=2`). See the
-[Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) for a comprehensive
-list of variables mapped to config options.
+`DOXXER__OUTPUT__FORMAT=json`, `DOXXER__NEXT__MAJOR__INCREMENT=2`).
 
 ## Usage
 
 **doxxer** is controlled via two main subcommands: `current` and `next`.
-Global options affecting all commands can be configured. For a comprehensive list of these options, refer to the [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) document or use `doxxer --help`.
+Global options affecting all commands can be configured. For a comprehensive list of these options, use `doxxer --help`.
 
 The general syntax is:
 ```bash
@@ -75,14 +68,14 @@ The `current` command retrieves the latest SemVer version from your Git tags.
 ```bash
 doxxer current
 ```
-You can extract a specific field of the version (e.g., `major`, `minor`) using the `-f, --field` option. For detailed command options, see [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) or run `doxxer current --help`.
+You can extract a specific field of the version (e.g., `major`, `minor`) using the `-f, --field` option. For detailed command options, run `doxxer current --help`.
 
 ### Next Version
 The `next` command calculates the next SemVer version based on a chosen strategy.
 ```bash
 doxxer next [STRATEGY]
 ```
-If no strategy is specified, it defaults to `dev`. You can use `-f, --field` to extract specific parts of the version. Each strategy (e.g., `major`, `patch`, `prerelease`) has specific options. For detailed information on strategies and their options, consult the [Advanced Configuration](./docs/ADVANCED_CONFIGURATION.md) or run `doxxer next --help`.
+If no strategy is specified, it defaults to `dev`. You can use `-f, --field` to extract specific parts of the version. Each strategy (e.g., `major`, `patch`, `prerelease`) has specific options. For detailed information on strategies and their options,run `doxxer next --help`.
 
 ## Template Variables
 `doxxer` allows for flexible output formatting using templates for the overall version string, prerelease identifiers, and build metadata.
@@ -99,8 +92,6 @@ Common variables available (depending on the template context) include:
 *   `{distance}`: Commit count since the last tag.
 *   `{hash}`: Short commit hash.
 *   `{pre}`: Existing prerelease string (useful in `dev` strategy).
-
-For a comprehensive list of variables, their detailed descriptions, and examples, please see the [Template Variables Details](./docs/ADVANCED_CONFIGURATION.md#template-variables-details) in advanced guide.
 
 ## Usage Examples
 
