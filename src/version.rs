@@ -1,3 +1,4 @@
+use chrono::Utc;
 use git2::{Error, ObjectType, Repository};
 use once_cell::sync::Lazy;
 use semver::{BuildMetadata, Prerelease, Version};
@@ -15,6 +16,51 @@ use regex::Regex;
 static SEMVER_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?").unwrap()
 });
+
+fn get_current_branch_name(repo: &Repository) -> Result<Option<String>, Error> {
+    let head = repo.head()?;
+    if head.is_branch() {
+        let branch_name_shorthand = head.shorthand();
+        if let Some(shorthand) = branch_name_shorthand {
+            Ok(Some(shorthand.to_string()))
+        } else {
+            Ok(None)
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+fn normalize_branch_name_for_semver(branch_name: &str) -> String {
+    let mut normalized_chars: Vec<char> = Vec::new();
+    let mut last_char_was_hyphen = false;
+
+    for c in branch_name.chars() {
+        if c.is_ascii_alphanumeric() {
+            normalized_chars.push(c.to_ascii_lowercase());
+            last_char_was_hyphen = false;
+        } else if c == '-' {
+            if !last_char_was_hyphen {
+                normalized_chars.push('-');
+                last_char_was_hyphen = true;
+            }
+        } else {
+            if !last_char_was_hyphen {
+                normalized_chars.push('-');
+                last_char_was_hyphen = true;
+            }
+        }
+    }
+    let mut normalized_name: String = normalized_chars.into_iter().collect();
+    while normalized_name.starts_with('-') {
+        normalized_name.remove(0);
+    }
+    while normalized_name.ends_with('-') {
+        normalized_name.pop();
+    }
+
+    normalized_name
+}
 
 fn find_tag_name_matching_version(
     repo: &Repository,
@@ -138,6 +184,10 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
         Err(_) => String::from(""),
     };
 
+    let date_time = Utc::now();
+    let branch = get_current_branch_name(repo).unwrap().unwrap_or_default();
+    let branch = normalize_branch_name_for_semver(&branch);
+
     let mut next = latest;
 
     // Set new major/minor/patch versions
@@ -166,6 +216,8 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
         hash: short_hash,
         distance: commit_count,
         identifier: settings.prerelease.identifier.clone(),
+        date_time,
+        branch: branch,
     };
     let pre = handle_prerelease(&settings.prerelease.template, &template_variables);
     let build = handle_build_metadata(&settings.build.template, &template_variables);

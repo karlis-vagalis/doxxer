@@ -92,6 +92,8 @@ Common variables available (depending on the template context) include:
 *   `{distance}`: Commit count since the last tag.
 *   `{hash}`: Short commit hash.
 *   `{pre}`: Existing prerelease string (useful in `dev` strategy).
+*   `{timestamp}`: Current UTC timestamp in `%Y%m%dT%H%M%SZ` format.
+*   `{branch}`: Current branch name in normalized form (all unsupported characters replaced with "-").
 
 ## Usage Examples
 
@@ -315,8 +317,3 @@ where we copy the binary to the `/bin` folder in our new image.
     [next.pre-minor]
     prerelease.identifier = "beta" # e.g., for beta releases on minor bumps, version like 1.3.0-beta.1
     ```
-
-# Roadmap
-
-- [ ] Add installation shell script, similar to `uv` or `just` to install prebuild binaries from GitHub
-- [ ] Add `{timestamp}` variable support to the template

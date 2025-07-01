@@ -11,6 +11,7 @@ keywords = ["semver", "git", "versioning", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
+chrono = "0.4.41"
 clap = { version = "4.5.38", features = ["derive"] }
 config = "0.15.11"
 git2 = { version = "0.20.2", default-features = false }
