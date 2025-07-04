@@ -128,6 +128,15 @@ fn find_latest_semver(repo: &Repository, filter: &Regex) -> Result<Option<Versio
     Ok(versions.into_iter().next())
 }
 
+pub fn extract_prerelease_identifier(pre: &Prerelease) -> Option<String> {
+    if pre.is_empty() {
+        None
+    } else {
+        pre.as_str().split('.').next().map(|s| s.to_string())
+    }
+}
+
+
 fn get_inc(pre: &str, identifier: &str) -> usize {
     if pre.is_empty() {
         return 1;
@@ -214,18 +223,18 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
     }
 
     let prerelease_identifier = match &settings.prerelease.identifier {
-        Some(identifier) => identifier,
-        None => todo!(),
+        Some(identifier) => identifier.clone(),
+        None => extract_prerelease_identifier(&next.pre).unwrap_or_default(),
     };
 
     // Set new prerelease and metadata
-    let inc = get_inc(next.pre.as_str(), prerelease_identifier);
+    let inc = get_inc(next.pre.as_str(), &prerelease_identifier);
     let template_variables = TemplateVariables {
         pre: next.pre.as_str().to_string(),
         inc,
         hash: short_hash,
         distance: commit_count,
-        identifier: settings.prerelease.identifier.clone(),
+        identifier: prerelease_identifier.clone(),
         date_time,
         branch: branch,
     };
