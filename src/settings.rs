@@ -26,7 +26,7 @@ pub struct BumpSettings {
 }
 #[derive(Debug)]
 pub struct PrereleaseSettings {
-    pub identifier: String,
+    pub identifier: Option<String>,
     pub template: String,
 }
 #[derive(Debug)]
@@ -97,7 +97,7 @@ impl Settings {
 
         let mut increment: u64 = default::INCREMENT;
 
-        let mut prerelease_identifier: String = default::PRERELEASE_IDENTIFIER.to_string();
+        let mut prerelease_identifier: Option<String> = Some(default::PRERELEASE_IDENTIFIER.to_string());
         let mut prerelease_template: String = default::PRERELEASE_TEMPLATE.to_string();
         let mut build_metadata_template: String = default::BUILD_METADATA_TEMPLATE.to_string();
 
@@ -280,16 +280,16 @@ impl Settings {
         config: &Configuration,
         prerelease_options: &PrereleaseOptions,
         command: &str,
-    ) -> String {
+    ) -> Option<String> {
         match &prerelease_options.identifier {
-            Some(s) => s.clone(),
+            Some(s) => Some(s.clone()),
             None => match config.get::<String>(command, "prerelease.identifier") {
-                Ok(s) => s,
+                Ok(s) => Some(s),
                 Err(_) => {
                     if command == "next.dev" {
-                        default::DEV_PRERELEASE_IDENTIFIER.to_string()
+                        Some(default::DEV_PRERELEASE_IDENTIFIER.to_string())
                     } else {
-                        default::PRERELEASE_IDENTIFIER.to_string()
+                        None
                     }
                 }
             },

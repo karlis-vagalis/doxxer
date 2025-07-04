@@ -213,8 +213,13 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
         Strategy::Dev(_) => {}
     }
 
+    let prerelease_identifier = match &settings.prerelease.identifier {
+        Some(identifier) => identifier,
+        None => todo!(),
+    };
+
     // Set new prerelease and metadata
-    let inc = get_inc(next.pre.as_str(), &settings.prerelease.identifier.as_str());
+    let inc = get_inc(next.pre.as_str(), prerelease_identifier);
     let template_variables = TemplateVariables {
         pre: next.pre.as_str().to_string(),
         inc,
