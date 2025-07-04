@@ -201,7 +201,12 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
             next.minor += settings.bump.increment;
             next.patch = 0;
         }
-        Strategy::Patch(_) | Strategy::PrePatch(_) => {
+        Strategy::Patch(_) => {
+            if next.pre.is_empty() {
+                next.patch += settings.bump.increment;
+            }
+        }
+        Strategy::PrePatch(_) => {
             next.patch += settings.bump.increment;
         }
         Strategy::Prerelease(_) => {}

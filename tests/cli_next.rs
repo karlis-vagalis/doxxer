@@ -54,7 +54,7 @@ fn test_next_minor_env() {
 }
 
 #[test]
-fn test_next_major() {
+fn test_next_patch_with_pre() {
     let td = tempfile::tempdir().unwrap();
     let td = td.path();
 
@@ -68,10 +68,34 @@ fn test_next_major() {
         .unwrap()
         .current_dir(td)
         .arg("next")
-        .arg("major")
+        .arg("patch")
         .assert()
         .success()
         .stdout(predicate::str::contains(
             "9.0.0"
         ));
 }
+
+#[test]
+fn test_next_patch() {
+    let td = tempfile::tempdir().unwrap();
+    let td = td.path();
+
+    let repo = initialize_repository(td);
+    create_file(td, "file.txt", "initial content");
+    add_all(&repo);
+    add_commit(&repo, "Initial commit");
+    add_tag(&repo, "9.0.0");
+
+    Command::cargo_bin(env!("CARGO_PKG_NAME"))
+        .unwrap()
+        .current_dir(td)
+        .arg("next")
+        .arg("patch")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "9.0.1"
+        ));
+}
+
