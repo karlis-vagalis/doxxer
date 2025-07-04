@@ -142,7 +142,6 @@ pub fn extract_prerelease_identifier(pre: &Prerelease) -> Option<String> {
     }
 }
 
-
 fn get_inc(pre: &str, identifier: &str) -> usize {
     if pre.is_empty() {
         return 1;

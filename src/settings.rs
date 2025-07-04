@@ -97,7 +97,8 @@ impl Settings {
 
         let mut increment: u64 = default::INCREMENT;
 
-        let mut prerelease_identifier: Option<String> = Some(default::PRERELEASE_IDENTIFIER.to_string());
+        let mut prerelease_identifier: Option<String> =
+            Some(default::PRERELEASE_IDENTIFIER.to_string());
         let mut prerelease_template: String = default::PRERELEASE_TEMPLATE.to_string();
         let mut build_metadata_template: String = default::BUILD_METADATA_TEMPLATE.to_string();
 
