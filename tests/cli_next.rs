@@ -99,3 +99,74 @@ fn test_next_patch() {
         ));
 }
 
+#[test]
+fn test_next_minor_autodetect_identifier() {
+    let td = tempfile::tempdir().unwrap();
+    let td = td.path();
+
+    let repo = initialize_repository(td);
+    create_file(td, "file.txt", "initial content");
+    add_all(&repo);
+    add_commit(&repo, "Initial commit");
+    add_tag(&repo, "5.1.2-alpha.5");
+
+    Command::cargo_bin(env!("CARGO_PKG_NAME"))
+        .unwrap()
+        .current_dir(td)
+        .arg("next")
+        .arg("prerelease")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "5.1.2-alpha.6"
+        ));
+}
+
+#[test]
+fn test_next_minor_autodetect_identifier_nonstandard() {
+    let td = tempfile::tempdir().unwrap();
+    let td = td.path();
+
+    let repo = initialize_repository(td);
+    create_file(td, "file.txt", "initial content");
+    add_all(&repo);
+    add_commit(&repo, "Initial commit");
+    add_tag(&repo, "5.1.2-alpha5");
+
+    Command::cargo_bin(env!("CARGO_PKG_NAME"))
+        .unwrap()
+        .current_dir(td)
+        .arg("next")
+        .arg("prerelease")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "5.1.2-alpha.6"
+        ));
+}
+
+
+#[test]
+fn test_next_minor_override_identifier() {
+    let td = tempfile::tempdir().unwrap();
+    let td = td.path();
+
+    let repo = initialize_repository(td);
+    create_file(td, "file.txt", "initial content");
+    add_all(&repo);
+    add_commit(&repo, "Initial commit");
+    add_tag(&repo, "5.1.2-alpha.5");
+
+    Command::cargo_bin(env!("CARGO_PKG_NAME"))
+        .unwrap()
+        .current_dir(td)
+        .arg("next")
+        .arg("prerelease")
+        .arg("beta")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "5.1.2-beta.1"
+        ));
+}
+

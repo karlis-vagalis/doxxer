@@ -132,7 +132,13 @@ pub fn extract_prerelease_identifier(pre: &Prerelease) -> Option<String> {
     if pre.is_empty() {
         None
     } else {
-        pre.as_str().split('.').next().map(|s| s.to_string())
+        let first_identifier = pre.as_str().split('.').next()?;
+        let re = Regex::new(r"^([^\d]*)\d*$").unwrap();
+        if let Some(captures) = re.captures(first_identifier) {
+            captures.get(1).map(|m| m.as_str().to_string())
+        } else {
+            Some(first_identifier.to_string())
+        }
     }
 }
 
