@@ -8,7 +8,7 @@ pub struct TemplateVariables {
     pub hash: String,
     pub distance: usize,
     pub date_time: DateTime<Utc>,
-    pub branch: String
+    pub branch: String,
 }
 impl TemplateVariables {
     fn fields(&self) -> Vec<(&'static str, String)> {
@@ -18,7 +18,10 @@ impl TemplateVariables {
             ("{identifier}", self.identifier.clone()),
             ("{hash}", self.hash.clone()),
             ("{distance}", self.distance.to_string()),
-            ("{timestamp}", self.date_time.format("%Y%m%dT%H%M%SZ").to_string()),
+            (
+                "{timestamp}",
+                self.date_time.format("%Y%m%dT%H%M%SZ").to_string(),
+            ),
             ("{branch}", self.branch.clone()),
         ]
     }

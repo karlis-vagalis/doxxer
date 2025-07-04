@@ -128,6 +128,20 @@ fn find_latest_semver(repo: &Repository, filter: &Regex) -> Result<Option<Versio
     Ok(versions.into_iter().next())
 }
 
+pub fn extract_prerelease_identifier(pre: &Prerelease) -> Option<String> {
+    if pre.is_empty() {
+        None
+    } else {
+        let first_identifier = pre.as_str().split('.').next()?;
+        let re = Regex::new(r"^([^\d]*)\d*$").unwrap();
+        if let Some(captures) = re.captures(first_identifier) {
+            captures.get(1).map(|m| m.as_str().to_string())
+        } else {
+            Some(first_identifier.to_string())
+        }
+    }
+}
+
 fn get_inc(pre: &str, identifier: &str) -> usize {
     if pre.is_empty() {
         return 1;
@@ -201,21 +215,31 @@ pub fn next_version(repo: &Repository, strategy: &Strategy, settings: &Settings)
             next.minor += settings.bump.increment;
             next.patch = 0;
         }
-        Strategy::Patch(_) | Strategy::PrePatch(_) => {
+        Strategy::Patch(_) => {
+            if next.pre.is_empty() {
+                next.patch += settings.bump.increment;
+            }
+        }
+        Strategy::PrePatch(_) => {
             next.patch += settings.bump.increment;
         }
         Strategy::Prerelease(_) => {}
         Strategy::Dev(_) => {}
     }
 
+    let prerelease_identifier = match &settings.prerelease.identifier {
+        Some(identifier) => identifier.clone(),
+        None => extract_prerelease_identifier(&next.pre).unwrap_or_default(),
+    };
+
     // Set new prerelease and metadata
-    let inc = get_inc(next.pre.as_str(), &settings.prerelease.identifier.as_str());
+    let inc = get_inc(next.pre.as_str(), &prerelease_identifier);
     let template_variables = TemplateVariables {
         pre: next.pre.as_str().to_string(),
         inc,
         hash: short_hash,
         distance: commit_count,
-        identifier: settings.prerelease.identifier.clone(),
+        identifier: prerelease_identifier.clone(),
         date_time,
         branch: branch,
     };
