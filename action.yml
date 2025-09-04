@@ -1,5 +1,8 @@
-name: 'Doxxer'
+name: 'karlis-vagalis/doxxer'
 description: 'Automates SemVer versioning using your Git tags and commit history'
+branding:
+  icon: 'git-merge'
+  color: 'gray-dark'
 
 inputs:
   version:
