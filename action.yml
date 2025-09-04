@@ -1,0 +1,19 @@
+name: 'Doxxer'
+description: 'Automates SemVer versioning using your Git tags and commit history'
+
+inputs:
+  version:
+    description: 'The version or tag of the Docker image to use'
+    required: false
+    default: 'latest'
+  command:
+    description: 'Doxxer command to run'
+    required: false
+    default: "next"
+
+runs:
+  using: 'docker'
+  image: 'ghcr.io/karlis-vagalis/doxxer:${{ inputs.version }}'
+  args:
+    - doxxer
+    - ${{ inputs.command }}
